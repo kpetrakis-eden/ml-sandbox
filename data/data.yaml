@@ -1,0 +1,10 @@
+path: data
+
+train: images/train
+val: images/train
+
+names:
+  0: flower
+  1: green
+  2: pink
+  3: blue
