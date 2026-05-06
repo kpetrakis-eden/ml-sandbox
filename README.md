@@ -1,6 +1,6 @@
 # First EDA
 
-I downloaded `20260417@1113 - Hortifrut - Almonte` dataset... 
+I downloaded `20260417@1113 - Hortifrut - Almonte` (UID:c834a7b7-4bbd-4791-98c0-9d2d8123d60a) dataset... 
 
 - all_images :  not yet utilized images.. (can ignore for now)
 - images/ : this is used for training
@@ -55,3 +55,8 @@ Old class names:
 - (in google sheet) or dataset-c834a7b7 (in dashboard) (UUID: c834a7b7-4bbd-4791-98c0-9d2d8123d60a)
   - 144/445 images have no corresponding label..
 
+
+- dataset-c967718b (UUID: c967718b-2031-49ca-aa14-080210cc3fc6)
+
+To obj.names exei : flower, green, pink, blue. Alla sta .txt iparxei kai index 4. 
+Mallon den iparxei i klasei 1 (bud) pouthena kai apla ta indexes einai 0, 2, 3, 4
