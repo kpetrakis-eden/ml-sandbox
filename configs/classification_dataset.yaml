@@ -1,0 +1,3 @@
+data_root: "data/preprocessed/classification"
+num_classes : 6
+num_workers: 12
