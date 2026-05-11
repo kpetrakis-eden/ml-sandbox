@@ -7,10 +7,13 @@ import yaml
 import json
 from tqdm import tqdm
 import torch
+from torch.optim import Adam
 from src.utils.reproducibility import seed_everything
 from src.models.resnet import get_resnet18
 from src.datasets.classification import get_dataloaders
 from src.trainers.default import Trainer
+from src.losses.factory import get_loss_fn
+from src.utils.extra import compute_class_weights
 
 with open("configs/config.yaml") as f:
   config = yaml.safe_load(f)
@@ -25,7 +28,11 @@ train_loader, dev_loader = get_dataloaders(config['data_root'], config['batch_si
 # _, targets = next(iter(train_loader))
 # print(targets[:10])
 model = get_resnet18(num_classes=config['num_classes'])
-trainer = Trainer(model, train_loader, dev_loader, device, lr=config['lr'])
+class_weights = compute_class_weights(train_loader, device)
+print(class_weights)
+loss_fn = get_loss_fn(config, class_weights)
+optimizer = Adam
+trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=config['lr'])
 
 pbar = tqdm(range(config['epochs']), desc="Main Loop", unit="epoch")
 for epoch in pbar:
@@ -37,6 +44,3 @@ for epoch in pbar:
     "dev_loss": f"{dev_loss:.7f}",
     "dev_acc": f"{100*dev_acc:2.2f}%"
   })
-
-  # train_loss=0.2664522, train acc=90.08 %, dev loss=0.2600182, dev acc=90.48 %
-  # 1/3 [01:05<02:11, 65.99s/epoch, train_loss=0.3135408, train_acc=88.33%, dev_loss=0.2811642, dev_acc=89.71%
