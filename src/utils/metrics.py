@@ -23,7 +23,7 @@ def compute_classification_metrics(preds, targets):
   recall_macro = recall_score(targets, preds, average='macro', zero_division='warn')
   recall_weighted = recall_score(targets, preds, average='weighted', zero_division='warn')
 
-  conf_matrix = confusion_matrix(targets, preds)
+  conf_matrix = confusion_matrix(targets, preds, normalize='true')
   # disp = ConfusionMatrixDisplay(conf_matrix, display_labels=class_names, cmap=plt.cm.Blues)
 
   return {
@@ -36,7 +36,6 @@ def compute_classification_metrics(preds, targets):
     "recall_macro": recall_macro * 100,
     "recall_weighted": recall_weighted * 100,
     "confusion_matrix": conf_matrix,
-    # "disp": disp
   }
 
 # def accuracy(logits, targets):
