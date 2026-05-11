@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-
+from tqdm.auto import tqdm
 
 class Trainer:
   def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, device:torch.device, lr:float):
@@ -13,7 +13,6 @@ class Trainer:
     self.loss_fn = nn.CrossEntropyLoss()
     self.optimizer = Adam(model.parameters(), lr=lr)
 
-
   def train_one_epoch(self):
     '''
     only returns the epoch loss now
@@ -22,7 +21,9 @@ class Trainer:
     train_loss = 0
     correct = 0
 
-    for i, (Xb, Yb) in enumerate(self.train_loader):
+    pbar = tqdm(self.train_loader, desc="Train dataloader", leave=False)
+    # for i, (Xb, Yb) in enumerate(self.train_loader):
+    for (Xb, Yb) in pbar:
       Xb, Yb = Xb.to(self.device), Yb.to(self.device)
 
       self.optimizer.zero_grad(set_to_none=True)
@@ -35,14 +36,16 @@ class Trainer:
       _, pred = torch.max(out, 1)
       correct += pred.eq(Yb).float().sum().item()
 
-    return train_loss / len(self.train_loader)
+    return train_loss / len(self.train_loader), correct / len(self.train_loader.dataset)
 
   @torch.no_grad
   def validate_one_epoch(self):
     self.model.eval()
     dev_loss = 0
     correct = 0
-    for i, (Xb, Yb) in enumerate(self.dev_loader):
+    pbar = tqdm(self.dev_loader, desc="Dev dataloader", leave=False)
+    # for i, (Xb, Yb) in enumerate(self.dev_loader):
+    for (Xb, Yb) in pbar:
       Xb, Yb = Xb.to(self.device), Yb.to(self.device)
 
       out = self.model(Xb)

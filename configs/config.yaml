@@ -4,4 +4,4 @@ num_workers: 12
 seed: 123456789
 batch_size : 256
 lr: 0.001
-epochs: 1
+epochs: 3
