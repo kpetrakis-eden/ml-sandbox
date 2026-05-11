@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+from src.utils.metrics import compute_classification_metrics
 
 class Trainer:
   def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, device:torch.device, lr:float):
@@ -21,7 +22,9 @@ class Trainer:
     '''
     self.model.train()
     train_loss = 0
-    correct = 0
+    # correct = 0
+    all_preds = []
+    all_targets = []
 
     pbar = tqdm(self.train_loader, desc="Train loader", leave=False)
     for (Xb, Yb) in pbar:
@@ -35,15 +38,24 @@ class Trainer:
 
       train_loss += loss.detach().item()
       _, pred = torch.max(out, 1)
-      correct += pred.eq(Yb).float().sum().item()
+      all_preds.append(pred.cpu())
+      all_targets.append(Yb.cpu())
+      # correct += pred.eq(Yb).float().sum().item()
 
-    return train_loss / len(self.train_loader), correct / len(self.train_loader.dataset)
+    all_preds = torch.cat(all_preds).numpy()
+    all_targets = torch.cat(all_targets).numpy()
+    metrics = compute_classification_metrics(all_preds, all_targets)
+    # print(all_preds[:3], all_targets[:3])
+    # return train_loss / len(self.train_loader) #, correct / len(self.train_loader.dataset)
+    return train_loss / len(self.train_loader), metrics
 
   @torch.no_grad
   def validate_one_epoch(self):
     self.model.eval()
     dev_loss = 0
-    correct = 0
+    # correct = 0
+    all_preds = []
+    all_targets = []
     pbar = tqdm(self.dev_loader, desc="Dev loader", leave=False)
     for (Xb, Yb) in pbar:
       Xb, Yb = Xb.to(self.device), Yb.to(self.device)
@@ -52,7 +64,13 @@ class Trainer:
       loss = self.loss_fn(out, Yb)
       dev_loss += loss.detach().item()
       _, pred = torch.max(out, 1)
-      correct += pred.eq(Yb).float().sum().item()
+      all_preds.append(pred.cpu())
+      all_targets.append(Yb.cpu())
+      # correct += pred.eq(Yb).float().sum().item()
 
-    return dev_loss / len(self.dev_loader), correct / len(self.dev_loader.dataset)
+    all_preds = torch.cat(all_preds).numpy()
+    all_targets = torch.cat(all_targets).numpy()
+    metrics = compute_classification_metrics(all_preds, all_targets)
+    # return dev_loss / len(self.dev_loader), correct / len(self.dev_loader.dataset)
+    return dev_loss / len(self.dev_loader), metrics
 
