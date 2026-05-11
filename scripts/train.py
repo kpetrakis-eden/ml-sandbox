@@ -17,6 +17,8 @@ from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
 from src.utils.extra import compute_class_weights
 
+import mlflow
+
 with open("configs/config.yaml") as f:
   config = yaml.safe_load(f)
 print(f"Config: \n{json.dumps(config, indent=2)}")
@@ -37,38 +39,72 @@ loss_fn = get_loss_fn(config, class_weights)
 optimizer = Adam
 trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=config['lr'])
 
-pbar = tqdm(range(config['epochs']), desc="Main Loop", unit="epoch")
-for epoch in pbar:
-  loss, metrics = trainer.train_one_epoch()
-  dev_loss, dev_metrics = trainer.validate_one_epoch()
-  pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})
-  tqdm.write(
-    f"train_acc {metrics['acc']:.2f}% | "
-    f"train_balanced_acc: {metrics['balanced_acc']:.2f}% | "
-    f"train_f1_macro: {metrics['f1_macro']:.2f}% | "
-    f"train_f1_weighted: {metrics['f1_weighted']:.2f}% | "
-    f"train_precision_macro: {metrics['precision_macro']:.2f}% | "
-    f"train_precision_weighted: {metrics['precision_weighted']:.2f}% | "
-    f"train_recall_macro: {metrics['recall_macro']:.2f}% | "
-    f"train_recall_weighted: {metrics['recall_weighted']:.2f}%"
-  )
-  tqdm.write(
-    f"dev_acc {dev_metrics['acc']:.2f}% | "
-    f"dev_balanced_acc: {dev_metrics['balanced_acc']:.2f}% | "
-    f"dev_f1_macro: {dev_metrics['f1_macro']:.2f}% | "
-    f"dev_f1_weighted: {dev_metrics['f1_weighted']:.2f}% | "
-    f"dev_precision_macro: {dev_metrics['precision_macro']:.2f}% | "
-    f"dev_precision_weighted: {dev_metrics['precision_weighted']:.2f}% | "
-    f"dev_recall_macro: {dev_metrics['recall_macro']:.2f}% | "
-    f"dev_recall_weighted: {dev_metrics['recall_weighted']:.2f}%"
-  )
-  tqdm.write("="*60 + "\n")
+print("active: ", mlflow.active_run())
+mlflow.set_experiment("Test experiment")
+with mlflow.start_run(run_name="test-run") as run:
+  mlflow.set_tags({
+    # "model": config["model_name"],
+    "optimizer": "AdamW",
+    "framework": "PyTorch"
+  })
+  mlflow.log_params(config)
+  pbar = tqdm(range(config['epochs']), desc="Main Loop", unit="epoch")
+  for epoch in pbar:
+    loss, metrics = trainer.train_one_epoch()
+    dev_loss, dev_metrics = trainer.validate_one_epoch()
+    pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})
+    tqdm.write(
+      f"train_acc {metrics['acc']:.2f}% | "
+      f"train_balanced_acc: {metrics['balanced_acc']:.2f}% | "
+      f"train_f1_macro: {metrics['f1_macro']:.2f}% | "
+      f"train_f1_weighted: {metrics['f1_weighted']:.2f}% | "
+      f"train_precision_macro: {metrics['precision_macro']:.2f}% | "
+      f"train_precision_weighted: {metrics['precision_weighted']:.2f}% | "
+      f"train_recall_macro: {metrics['recall_macro']:.2f}% | "
+      f"train_recall_weighted: {metrics['recall_weighted']:.2f}%"
+    )
+    tqdm.write(
+      f"dev_acc {dev_metrics['acc']:.2f}% | "
+      f"dev_balanced_acc: {dev_metrics['balanced_acc']:.2f}% | "
+      f"dev_f1_macro: {dev_metrics['f1_macro']:.2f}% | "
+      f"dev_f1_weighted: {dev_metrics['f1_weighted']:.2f}% | "
+      f"dev_precision_macro: {dev_metrics['precision_macro']:.2f}% | "
+      f"dev_precision_weighted: {dev_metrics['precision_weighted']:.2f}% | "
+      f"dev_recall_macro: {dev_metrics['recall_macro']:.2f}% | "
+      f"dev_recall_weighted: {dev_metrics['recall_weighted']:.2f}%"
+    )
+    tqdm.write("="*60 + "\n")
+    mlflow.log_metrics({
+      "train/loss": loss,
+      "train/acc": metrics['acc'],
+      "train/balanced_acc": metrics['balanced_acc'],
+      "train/f1_macro": metrics['f1_macro'],
+      "train/f1_weighted": metrics['f1_weighted'],
+      "train/precision_macro": metrics['precision_macro'],
+      "train/precision_weighted": metrics['precision_weighted'],
+      "train/recall_macro": metrics['recall_macro'],
+      "train/recall_weighted": metrics['recall_weighted'],
+      "dev/loss": dev_loss,
+      "dev/acc": dev_metrics['acc'],
+      "dev/balanced_acc": dev_metrics['balanced_acc'],
+      "dev/f1_macro": dev_metrics['f1_macro'],
+      "dev/f1_weighted": dev_metrics['f1_weighted'],
+      "dev/precision_macro": dev_metrics['precision_macro'],
+      "dev/precision_weighted": dev_metrics['precision_weighted'],
+      "dev/recall_macro": dev_metrics['recall_macro'],
+      "dev/recall_weighted": dev_metrics['recall_weighted'],
+    },
+    step=epoch)
 
-  conf_matrix = dev_metrics['confusion_matrix']
-  disp_conf_matrix = ConfusionMatrixDisplay(conf_matrix, display_labels=CLASS_NAMES)
-  # fig, ax = plt.subplots()
-  disp_conf_matrix.plot(cmap=plt.cm.Blues, xticks_rotation=45)
-  # plt.show()
-  plt.tight_layout()
-  plt.savefig(f"dev_cm_weights_{epoch}.png")
-  plt.close()
+
+    conf_matrix = dev_metrics['confusion_matrix']
+    fig, ax = plt.subplots(figsize=(6,6))
+    disp_conf_matrix = ConfusionMatrixDisplay(conf_matrix, display_labels=CLASS_NAMES)
+    disp_conf_matrix.plot(ax=ax, cmap=plt.cm.Blues, xticks_rotation=45)
+    # plt.tight_layout()
+    # fig.savefig(f"conf_matrix_{epoch}.png", dpi=300, bbox_inches="tight")
+    # mlflow.log_artifact(f"conf_matrix_{epoch}.png", artifact_path="confusion_matrices")
+    mlflow.log_figure(fig, f"conf_matrix_{epoch}.png")
+    plt.close(fig)
+
+mlflow.end_run()
