@@ -2,6 +2,8 @@ import os
 # needed when use_determinist_algoriithms is used in CUDA > 10.2, before importing pytorch
 os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 os.environ["PYTHONHASHSEED"] = "0"
+import sys
+import platform
 from pathlib import Path
 import yaml
 import json
@@ -15,7 +17,7 @@ from src.models.resnet import get_resnet18
 from src.datasets.classification import get_dataloaders
 from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
-from src.utils.extra import compute_class_weights
+from src.utils.extra import set_or_create_experiment, compute_class_weights, build_weighted_sampler
 
 import mlflow
 
@@ -23,31 +25,53 @@ with open("configs/config.yaml") as f:
   config = yaml.safe_load(f)
 print(f"Config: \n{json.dumps(config, indent=2)}")
 CLASS_NAMES = config['class_names']
-device = torch.accelerator.current_accelerator() if torch.accelerator.is_available() else torch.device("cpu")
+# device = torch.accelerator.current_accelerator() if torch.accelerator.is_available() else torch.device("cpu")
+device = torch.device("cuda:1")
+print(device)
 
 seed_everything(config['seed'])
 generator = torch.Generator().manual_seed(config['seed'])
 
-train_loader, dev_loader = get_dataloaders(config['data_root'], config['batch_size'], generator)
+sampler = build_weighted_sampler() if config['sampling']=="weighted" else None
+train_loader, dev_loader = get_dataloaders(config['data_root'], config['batch_size'], sampler, generator)
 # _, targets = next(iter(train_loader))
 # print(targets[:10])
 model = get_resnet18(num_classes=config['num_classes'])
-class_weights = compute_class_weights(train_loader, device)
-print(f"Class weights: {class_weights}")
-# class_weights = None
+# class_weights = compute_class_weights(train_loader, device)
+# print(f"Class weights: {class_weights}")
+class_weights = None
 loss_fn = get_loss_fn(config, class_weights)
 optimizer = Adam
 trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=config['lr'])
 
-print("active: ", mlflow.active_run())
-mlflow.set_experiment("Test experiment")
-with mlflow.start_run(run_name="test-run") as run:
+# TODO: move thos inside helper function
+TRACKING_URI = f"sqlite:///{Path('experiments/mlflow.db').resolve()}" 
+ARTIFACT_LOCATION = Path("experiments")
+mlflow.set_tracking_uri(TRACKING_URI)
+print(f"TRACKING URI : {TRACKING_URI}")
+experiment = set_or_create_experiment("test-experiment", ARTIFACT_LOCATION)
+# print(f"Experiment_id: {experiment.experiment_id}")
+# print(f"Artifact Location: {experiment.artifact_location}")
+# print(f"Tags: {experiment.tags}")
+# print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
+
+RUN_NAME = "weighted-sampling"
+with mlflow.start_run(run_name=RUN_NAME) as run:
   mlflow.set_tags({
-    # "model": config["model_name"],
+    "stage": "research",
+    "model_family": "resnet",
+    "environment":"hyperbeast",
+    "gpu":"rtx4090",
     "optimizer": "AdamW",
     "framework": "PyTorch"
   })
   mlflow.log_params(config)
+  mlflow.log_params({
+    "python_version": sys.version,
+    "pytorch_version": torch.__version__,
+    "cuda_version": torch.version.cuda,
+    "platform": platform.platform(),
+})
   pbar = tqdm(range(config['epochs']), desc="Main Loop", unit="epoch")
   for epoch in pbar:
     loss, metrics = trainer.train_one_epoch()
@@ -73,7 +97,7 @@ with mlflow.start_run(run_name="test-run") as run:
       f"dev_recall_macro: {dev_metrics['recall_macro']:.2f}% | "
       f"dev_recall_weighted: {dev_metrics['recall_weighted']:.2f}%"
     )
-    tqdm.write("="*60 + "\n")
+    tqdm.write("="*130 + "\n")
     mlflow.log_metrics({
       "train/loss": loss,
       "train/acc": metrics['acc'],
@@ -96,15 +120,15 @@ with mlflow.start_run(run_name="test-run") as run:
     },
     step=epoch)
 
-
-    conf_matrix = dev_metrics['confusion_matrix']
-    fig, ax = plt.subplots(figsize=(6,6))
-    disp_conf_matrix = ConfusionMatrixDisplay(conf_matrix, display_labels=CLASS_NAMES)
-    disp_conf_matrix.plot(ax=ax, cmap=plt.cm.Blues, xticks_rotation=45)
-    # plt.tight_layout()
-    # fig.savefig(f"conf_matrix_{epoch}.png", dpi=300, bbox_inches="tight")
-    # mlflow.log_artifact(f"conf_matrix_{epoch}.png", artifact_path="confusion_matrices")
-    mlflow.log_figure(fig, f"conf_matrix_{epoch}.png")
-    plt.close(fig)
+    if (epoch+1) % 5 == 0:
+      conf_matrix = dev_metrics['confusion_matrix']
+      fig, ax = plt.subplots(figsize=(6,6))
+      disp_conf_matrix = ConfusionMatrixDisplay(conf_matrix, display_labels=CLASS_NAMES)
+      disp_conf_matrix.plot(ax=ax, cmap=plt.cm.Blues, xticks_rotation=45)
+      # plt.tight_layout()
+      # fig.savefig(f"conf_matrix_{epoch}.png", dpi=300, bbox_inches="tight")
+      # mlflow.log_artifact(f"conf_matrix_{epoch}.png", artifact_path="confusion_matrices")
+      mlflow.log_figure(fig, f"conf_matrix_{epoch:03d}.png")
+      plt.close(fig)
 
 mlflow.end_run()

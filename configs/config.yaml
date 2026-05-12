@@ -4,8 +4,9 @@ num_workers: 12
 seed: 123456789
 batch_size : 256
 lr: 0.001
-epochs: 3
+epochs: 30
 loss_name: "cross-entropy"
+sampling: "weighted"
 class_names:
   - bud
   - flower
