@@ -13,12 +13,11 @@ from torch.optim import Adam
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from src.utils.reproducibility import seed_everything
-from src.models.resnet import get_resnet18
-from src.datasets.classification import get_dataloaders
+from src.models.resnet import get_resnet18, get_resnet50
+from src.datasets.classification import DataConfig, DataFactory # get_dataloaders
 from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment, compute_class_weights, build_weighted_sampler
-
 import mlflow
 
 with open("configs/config.yaml") as f:
@@ -32,8 +31,10 @@ print(device)
 seed_everything(config['seed'])
 generator = torch.Generator().manual_seed(config['seed'])
 
-sampler = build_weighted_sampler() if config['sampling']=="weighted" else None
-train_loader, dev_loader = get_dataloaders(config['data_root'], config['batch_size'], sampler, generator)
+data_cfg = DataConfig( data_dir=Path(config["data_root"]), batch_size=config["batch_size"], sampling=config["data_sampling"])
+data_factory = DataFactory(data_cfg, generator)
+train_loader, dev_loader = data_factory.build_datasets().build_sampler().build_loaders()
+
 # _, targets = next(iter(train_loader))
 # print(targets[:10])
 model = get_resnet18(num_classes=config['num_classes'])
@@ -130,5 +131,7 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
       # mlflow.log_artifact(f"conf_matrix_{epoch}.png", artifact_path="confusion_matrices")
       mlflow.log_figure(fig, f"conf_matrix_{epoch:03d}.png")
       plt.close(fig)
+
+    mlflow.pytorch.log_model(model, name=f"resnet18_weighted_{epoch:03d}")
 
 mlflow.end_run()

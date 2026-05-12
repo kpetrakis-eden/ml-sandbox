@@ -1,10 +1,12 @@
+from dataclasses import dataclass
 from pathlib import Path
+import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler, Sampler
 from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
 
-def get_dataloaders(data_dir: Path, batch_size: int, g: torch.Generator):
+def get_dataloaders(data_dir: Path, batch_size: int, g: torch.Generator, sampler:Sampler = None):
   # NOTE: if I add random transforms then I need seed_worker for determinism in dataloading
   transforms = v2.Compose([
     v2.Resize((64, 64)),
@@ -20,7 +22,11 @@ def get_dataloaders(data_dir: Path, batch_size: int, g: torch.Generator):
   train_dataset = ImageFolder(data_dir / "train", transform=transforms)
   dev_dataset = ImageFolder(data_dir / "dev", transform=transforms)
 
-  train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=12, generator=g)
+  if sampler is None:
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=12, generator=g)
+  else:
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler, num_workers=12, generator=g)
+
   dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False, num_workers=12, generator=g)
 
   return train_dataloader, dev_dataloader
@@ -34,3 +40,60 @@ Those weights were computed on all the data,before the split..
 
 the new values after the split, are not so different!!
 '''
+
+@dataclass
+class DataConfig:
+  data_dir: Path
+  batch_size: int
+  num_workers: int = 12
+  sampling: str = "none" # "none" | "weighted"
+
+class DataFactory:
+  def __init__(self, cfg: DataConfig, generator: torch.Generator):
+    self.cfg = cfg
+    self.g = generator
+    self.transforms = v2.Compose([
+      v2.Resize((64, 64)),
+      v2.ToImage(),
+      v2.ToDtype(torch.float32, scale=True),
+      v2.Normalize(
+        mean=[0.4291, 0.5388, 0.3654],
+        std=[0.1859, 0.2121, 0.1966]
+      )
+    ])
+
+    self.train_ds = None
+    self.dev_ds = None
+    self.sampler = None
+
+  def build_datasets(self):
+    self.train_ds = ImageFolder(self.cfg.data_dir / "train", transform=self.transforms)
+    self.dev_ds = ImageFolder(self.cfg.data_dir / "dev", transform=self.transforms)
+    return self
+
+  def build_sampler(self):
+    if self.cfg.sampling != "weighted":
+      self.sampler = None
+      return self
+
+    class_counts = np.bincount(self.train_ds.targets)
+    class_weights = 1.0 / class_counts
+    sample_weights = class_weights[self.train_ds.targets]
+
+    self.sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+    return self
+
+  def build_loaders(self):
+    if self.train_ds is None or self.dev_ds is None:
+      raise RuntimeError("Call build_datasets() first")
+
+    if self.sampler is None:
+      train_loader = DataLoader(self.train_ds, batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.num_workers, generator=self.g)
+    else:
+      train_loader = DataLoader(self.train_ds, batch_size=self.cfg.batch_size, sampler=self.sampler, num_workers=self.cfg.num_workers, generator=self.g)
+
+    dev_loader = DataLoader(self.dev_ds, batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.num_workers, generator=self.g)
+
+    return train_loader, dev_loader
+
+
