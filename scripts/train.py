@@ -20,7 +20,7 @@ from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment, compute_class_weights, build_weighted_sampler
 import mlflow
 
-with open("configs/config.yaml") as f:
+with open("configs/config_expanded.yaml") as f:
   config = yaml.safe_load(f)
 print(f"Config: \n{json.dumps(config, indent=2)}")
 CLASS_NAMES = config['class_names']
@@ -31,12 +31,12 @@ print(device)
 seed_everything(config['seed'])
 generator = torch.Generator().manual_seed(config['seed'])
 
-data_cfg = DataConfig( data_dir=Path(config["data_root"]), batch_size=config["batch_size"], sampling=config["data_sampling"])
+data_cfg = DataConfig(**config['data'])
 data_factory = DataFactory(data_cfg, generator)
 train_loader, dev_loader = data_factory.build_datasets().build_sampler().build_loaders()
-
 # _, targets = next(iter(train_loader))
 # print(targets[:10])
+
 model = get_resnet18(num_classes=config['num_classes'])
 # class_weights = compute_class_weights(train_loader, device)
 # print(f"Class weights: {class_weights}")
@@ -48,16 +48,16 @@ trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, l
 EXPERIMENT_NAME = "blueberries-classification"
 # TODO: move those inside helper function
 TRACKING_URI = f"sqlite:///{Path('experiments/mlflow.db').resolve()}" 
-ARTIFACT_LOCATION = Path("experiments")
 mlflow.set_tracking_uri(TRACKING_URI)
 print(f"TRACKING URI : {TRACKING_URI}")
+ARTIFACT_LOCATION = Path("experiments")
 experiment = set_or_create_experiment(EXPERIMENT_NAME, ARTIFACT_LOCATION)
 print(f"Experiment_id: {experiment.experiment_id}")
 print(f"Artifact Location: {experiment.artifact_location}")
 print(f"Tags: {experiment.tags}")
 print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
 
-RUN_NAME = "resnet18-base"
+RUN_NAME = config["run_name"] # "expanded-resnet18-weighted-sampling"
 with mlflow.start_run(run_name=RUN_NAME) as run:
   mlflow.set_tags({
     "stage": "research",
@@ -148,7 +148,6 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
   # model.load_state_dict(torch.load("best.pt"))
   mlflow.pytorch.log_model(model, name="best_model")
   # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
-  # mlflow.pytorch.log_model(model, artifact_path="model")
 
   # log best conf matrix
   fig, ax = plt.subplots(figsize=(6,6))

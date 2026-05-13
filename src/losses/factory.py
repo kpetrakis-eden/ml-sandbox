@@ -8,4 +8,5 @@ def get_loss_fn(config, class_weights=None):
 
   elif loss_name == "focal":
     gamma = config['loss']['focal_gamma']
-    return FocalLoss(alpha=class_weights, gamma=gamma, reduction='mean')
+    reduction = config['loss']['focal_reduction']
+    return FocalLoss(alpha=class_weights, gamma=gamma, reduction=reduction)

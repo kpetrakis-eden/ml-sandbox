@@ -3,20 +3,20 @@ seed: 123456789
 num_classes : 6
 lr: 0.001
 epochs: 30
-loss_name: "focal"
+loss_name: "cross-entropy"
 loss:
-  focal_gamma: 2.0
-  focal_reduction: "mean"
+  focal_gamma: null
+  focal_reduction: null
 
 data:
-  root: "data/processed/classification"
+  root: "data/processed/classification-expanded-boxes"
   num_workers: 12
   batch_size : 256
   sampling: "default"
   normalization:
     enabled: true
-    mean: [0.4291, 0.5388, 0.3654]
-    std: [0.1859, 0.2121, 0.1966]
+    mean: [0.3994, 0.5100, 0.3541]
+    std: [0.1831, 0.2149, 0.2105]
 
 class_names:
   - bud

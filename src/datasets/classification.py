@@ -1,3 +1,4 @@
+from typing import Optional
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -42,33 +43,51 @@ the new values after the split, are not so different!!
 '''
 
 @dataclass
+class NormalizationConfig:
+  enabled: bool
+  mean: Optional[list] = None
+  std: Optional[list] = None
+
+@dataclass
 class DataConfig:
-  data_dir: Path
+  root: Path
+  num_workers: int
   batch_size: int
-  num_workers: int = 12
-  sampling: str = "none" # "none" | "weighted"
+  sampling: str = "default" # "default" | "weighted"
+  normalization: NormalizationConfig = None
+
+  def __post_init__(self):
+    self.root = Path(self.root)
+    self.normalization = NormalizationConfig(**self.normalization)
 
 class DataFactory:
   def __init__(self, cfg: DataConfig, generator: torch.Generator):
     self.cfg = cfg
     self.g = generator
-    self.transforms = v2.Compose([
-      v2.Resize((64, 64)),
-      v2.ToImage(),
-      v2.ToDtype(torch.float32, scale=True),
-      v2.Normalize(
-        mean=[0.4291, 0.5388, 0.3654],
-        std=[0.1859, 0.2121, 0.1966]
-      )
-    ])
+    if cfg.normalization.enabled:
+      self.transforms = v2.Compose([
+        v2.Resize((64, 64)),
+        v2.ToImage(),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(
+          mean = self.cfg.normalization.mean,
+          std = self.cfg.normalization.std
+        )
+      ])
+    else:
+      self.transforms = v2.Compose([
+        v2.Resize((64, 64)),
+        v2.ToImage(),
+        v2.ToDtype(torch.float32, scale=True)
+      ])
 
     self.train_ds = None
     self.dev_ds = None
     self.sampler = None
 
   def build_datasets(self):
-    self.train_ds = ImageFolder(self.cfg.data_dir / "train", transform=self.transforms)
-    self.dev_ds = ImageFolder(self.cfg.data_dir / "dev", transform=self.transforms)
+    self.train_ds = ImageFolder(self.cfg.root / "train", transform=self.transforms)
+    self.dev_ds = ImageFolder(self.cfg.root / "dev", transform=self.transforms)
     return self
 
   def build_sampler(self):
