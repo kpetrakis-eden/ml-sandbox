@@ -19,6 +19,11 @@ from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment, compute_class_weights, build_weighted_sampler
 import mlflow
+import logging
+import warnings
+
+logging.getLogger("mlflow").setLevel(logging.ERROR)
+warnings.filterwarnings( "ignore", module="mlflow")
 
 with open("configs/config_expanded.yaml") as f:
   config = yaml.safe_load(f)
@@ -143,6 +148,7 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
 
       # keep metrics at lowest loss
       best_conf_matrix = dev_metrics['confusion_matrix']
+      # mlflow.pytorch.log_model(model, name="best_model")
 
   model.load_state_dict(best_state)
   # model.load_state_dict(torch.load("best.pt"))

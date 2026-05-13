@@ -65,7 +65,20 @@ class DataFactory:
     self.cfg = cfg
     self.g = generator
     if cfg.normalization.enabled:
-      self.transforms = v2.Compose([
+      self.train_transforms = v2.Compose([
+        v2.Resize((64, 64)),
+        v2.ToImage(),
+        # v2.RandomHorizontalFlip(p=0.5),
+        # v2.RandomVerticalFlip(p=0.5),
+        # v2.RandomRotation(degrees=10),
+        # v2.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.01),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(
+          mean = self.cfg.normalization.mean,
+          std = self.cfg.normalization.std
+        )
+      ])
+      self.dev_transforms = v2.Compose([
         v2.Resize((64, 64)),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
@@ -75,7 +88,12 @@ class DataFactory:
         )
       ])
     else:
-      self.transforms = v2.Compose([
+      self.train_transforms = v2.Compose([
+        v2.Resize((64, 64)),
+        v2.ToImage(),
+        v2.ToDtype(torch.float32, scale=True)
+      ])
+      self.dev_transforms = v2.Compose([
         v2.Resize((64, 64)),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True)
@@ -86,8 +104,8 @@ class DataFactory:
     self.sampler = None
 
   def build_datasets(self):
-    self.train_ds = ImageFolder(self.cfg.root / "train", transform=self.transforms)
-    self.dev_ds = ImageFolder(self.cfg.root / "dev", transform=self.transforms)
+    self.train_ds = ImageFolder(self.cfg.root / "train", transform=self.train_transforms)
+    self.dev_ds = ImageFolder(self.cfg.root / "dev", transform=self.dev_transforms)
     return self
 
   def build_sampler(self):

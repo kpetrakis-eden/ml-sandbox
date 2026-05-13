@@ -1,7 +1,7 @@
-run_name: ""
+run_name: "expanded-resnet18-weighted-sampling-aug"
 seed: 123456789
 num_classes : 6
-lr: 0.001
+lr: 0.0001
 epochs: 30
 loss_name: "cross-entropy"
 loss:
@@ -12,7 +12,7 @@ data:
   root: "data/processed/classification-expanded-boxes"
   num_workers: 12
   batch_size : 256
-  sampling: "default"
+  sampling: "weighted"
   normalization:
     enabled: true
     mean: [0.3994, 0.5100, 0.3541]
