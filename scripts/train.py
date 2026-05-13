@@ -45,25 +45,26 @@ loss_fn = get_loss_fn(config, class_weights)
 optimizer = Adam
 trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=config['lr'])
 
-# TODO: move thos inside helper function
+EXPERIMENT_NAME = "blueberries-classification"
+# TODO: move those inside helper function
 TRACKING_URI = f"sqlite:///{Path('experiments/mlflow.db').resolve()}" 
 ARTIFACT_LOCATION = Path("experiments")
 mlflow.set_tracking_uri(TRACKING_URI)
 print(f"TRACKING URI : {TRACKING_URI}")
-experiment = set_or_create_experiment("test-experiment", ARTIFACT_LOCATION)
-# print(f"Experiment_id: {experiment.experiment_id}")
-# print(f"Artifact Location: {experiment.artifact_location}")
-# print(f"Tags: {experiment.tags}")
-# print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
+experiment = set_or_create_experiment(EXPERIMENT_NAME, ARTIFACT_LOCATION)
+print(f"Experiment_id: {experiment.experiment_id}")
+print(f"Artifact Location: {experiment.artifact_location}")
+print(f"Tags: {experiment.tags}")
+print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
 
-RUN_NAME = "weighted-sampling"
+RUN_NAME = "resnet18-base"
 with mlflow.start_run(run_name=RUN_NAME) as run:
   mlflow.set_tags({
     "stage": "research",
     "model_family": "resnet",
     "environment":"hyperbeast",
     "gpu":"rtx4090",
-    "optimizer": "AdamW",
+    "optimizer": "Adam",
     "framework": "PyTorch"
   })
   mlflow.log_params(config)
@@ -72,8 +73,10 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
     "pytorch_version": torch.__version__,
     "cuda_version": torch.version.cuda,
     "platform": platform.platform(),
-})
-  pbar = tqdm(range(config['epochs']), desc="Main Loop", unit="epoch")
+  })
+  best_dev_loss = float('inf')
+  best_conf_matrix = None
+  pbar = tqdm(range(1, config['epochs']+1), desc="Main Loop", unit="epoch")
   for epoch in pbar:
     loss, metrics = trainer.train_one_epoch()
     dev_loss, dev_metrics = trainer.validate_one_epoch()
@@ -121,7 +124,7 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
     },
     step=epoch)
 
-    if (epoch+1) % 5 == 0:
+    if (epoch % 5) == 0:
       conf_matrix = dev_metrics['confusion_matrix']
       fig, ax = plt.subplots(figsize=(6,6))
       disp_conf_matrix = ConfusionMatrixDisplay(conf_matrix, display_labels=CLASS_NAMES)
@@ -132,6 +135,26 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
       mlflow.log_figure(fig, f"conf_matrix_{epoch:03d}.png")
       plt.close(fig)
 
-    mlflow.pytorch.log_model(model, name=f"resnet18_weighted_{epoch:03d}")
+    if dev_loss < best_dev_loss:
+      best_dev_loss = dev_loss
+      best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+      # torch.save(model.state_dict(), f"best_{epoch:03d}.pt")
+      # mlflow.log_artifact("best.pt", model.state_dict())
+
+      # keep metrics at lowest loss
+      best_conf_matrix = dev_metrics['confusion_matrix']
+
+  model.load_state_dict(best_state)
+  # model.load_state_dict(torch.load("best.pt"))
+  mlflow.pytorch.log_model(model, name="best_model")
+  # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
+  # mlflow.pytorch.log_model(model, artifact_path="model")
+
+  # log best conf matrix
+  fig, ax = plt.subplots(figsize=(6,6))
+  disp_conf_matrix = ConfusionMatrixDisplay(best_conf_matrix, display_labels=CLASS_NAMES)
+  disp_conf_matrix.plot(ax=ax, cmap=plt.cm.Blues, xticks_rotation=45)
+  mlflow.log_figure(fig, f"conf_matrix_at_min_loss.png")
+  plt.close(fig)
 
 mlflow.end_run()

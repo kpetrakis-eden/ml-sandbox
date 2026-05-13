@@ -14,3 +14,11 @@ class_names:
   - pink
   - purple
   - blue
+
+loss:
+  focal_gamma: 2.0
+
+augmentations:
+  train:
+
+  # dev:

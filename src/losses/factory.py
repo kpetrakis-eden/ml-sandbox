@@ -7,5 +7,5 @@ def get_loss_fn(config, class_weights=None):
     return nn.CrossEntropyLoss(weight=class_weights)
 
   elif loss_name == "focal":
-    # raise NotImplementedError
-    return FocalLoss(alpha=class_weights, gamma=2.0, reduction='mean')
+    gamma = config['loss']['focal_gamma']
+    return FocalLoss(alpha=class_weights, gamma=gamma, reduction='mean')
