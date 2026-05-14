@@ -7,6 +7,7 @@ from sklearn.metrics import (
   precision_score,
   recall_score,
   confusion_matrix,
+  classification_report,
   ConfusionMatrixDisplay
 )
 
@@ -27,6 +28,8 @@ def compute_classification_metrics(preds, targets):
   conf_matrix = confusion_matrix(targets, preds, normalize=None)
   # disp = ConfusionMatrixDisplay(conf_matrix, display_labels=class_names, cmap=plt.cm.Blues)
 
+  per_class_report = classification_report(targets, preds, output_dict=True)
+
   return {
     "acc": accuracy * 100,
     "balanced_acc": balanced_accuracy * 100,
@@ -37,6 +40,7 @@ def compute_classification_metrics(preds, targets):
     "recall_macro": recall_macro * 100,
     "recall_weighted": recall_weighted * 100,
     "confusion_matrix": conf_matrix,
+    "classification_report": per_class_report
   }
 
 

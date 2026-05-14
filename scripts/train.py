@@ -43,9 +43,9 @@ train_loader, dev_loader = data_factory.build_datasets().build_sampler().build_l
 # print(targets[:10])
 
 model = get_resnet18(num_classes=config['num_classes'])
-# class_weights = compute_class_weights(train_loader, device)
-# print(f"Class weights: {class_weights}")
-class_weights = None
+class_weights = compute_class_weights(train_loader, device)
+print(f"Class weights: {class_weights}")
+# class_weights = None
 loss_fn = get_loss_fn(config, class_weights)
 optimizer = Adam
 trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=config['lr'])
@@ -150,16 +150,24 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
       best_conf_matrix = dev_metrics['confusion_matrix']
       # mlflow.pytorch.log_model(model, name="best_model")
 
-  model.load_state_dict(best_state)
-  # model.load_state_dict(torch.load("best.pt"))
-  mlflow.pytorch.log_model(model, name="best_model")
-  # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
+      # full classification report on best loss
+      report = dev_metrics['classification_report']
+
+  # log classification report
+  with open("experiments/dev_classification_report.json", "w") as f:
+    json.dump(report, f, indent=2)
+  mlflow.log_artifact("experiments/dev_classification_report.json", artifact_path="reports")
+
+  # model.load_state_dict(best_state)
+  # # model.load_state_dict(torch.load("best.pt"))
+  # mlflow.pytorch.log_model(model, name="best_model")
+  # # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
 
   # log best conf matrix
   fig, ax = plt.subplots(figsize=(6,6))
   disp_conf_matrix = ConfusionMatrixDisplay(best_conf_matrix, display_labels=CLASS_NAMES)
   disp_conf_matrix.plot(ax=ax, cmap=plt.cm.Blues, xticks_rotation=45)
-  mlflow.log_figure(fig, f"conf_matrix_at_min_loss.png")
+  mlflow.log_figure(fig, f"confusion_matrices/conf_matrix_at_min_loss.png")
   plt.close(fig)
 
 mlflow.end_run()
