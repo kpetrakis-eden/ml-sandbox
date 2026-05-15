@@ -44,16 +44,14 @@ def compute_classification_metrics(preds, targets):
   }
 
 
-def prediction_dynamics():
-  raise NotImplementedError
+def prediction_dynamics(targets, preds, cls_idx, max_images=16):
+  wrong_mask = preds != targets
 
-#   '''
-#   TODO
-#   '''
-#   _, pred = torch.max(logits, 1)
-#   correct += pred.eq(targets).float().sum().item()
-# 
-#   return 100 * correct # ?
-# 
-# def confusion_matrix():
-#   raise NotImplementedError
+  # Restrict to specific true class if requested
+  if cls_idx is not None:
+    wrong_mask &= (targets == cls_idx)
+
+  wrong_indices = np.where(wrong_mask)[0]
+
+  # Limit number of displayed images
+  wrong_indices = wrong_indices[:max_images]

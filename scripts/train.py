@@ -153,7 +153,7 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
       # full classification report on best loss
       report = dev_metrics['classification_report']
 
-  # log classification report
+  # log best classification report
   with open("experiments/dev_classification_report.json", "w") as f:
     json.dump(report, f, indent=2)
   mlflow.log_artifact("experiments/dev_classification_report.json", artifact_path="reports")

@@ -8,26 +8,6 @@ import torchvision.transforms.v2 as v2
 from src.utils.config import DataConfig
 from hydra.utils import instantiate
 
-'''
-@dataclass
-class NormalizationConfig:
-  enabled: bool
-  mean: Optional[list] = None
-  std: Optional[list] = None
-
-@dataclass
-class DataConfig:
-  root: Path
-  num_workers: int
-  batch_size: int
-  sampling: str = "default" # "default" | "weighted"
-  normalization: NormalizationConfig = None
-
-  def __post_init__(self):
-    self.root = Path(self.root)
-    self.normalization = NormalizationConfig(**self.normalization)
-'''
-
 class DataFactory:
   def __init__(self, cfg: DataConfig, generator: torch.Generator):
     self.cfg = cfg
@@ -92,6 +72,24 @@ class DataFactory:
     return train_loader, dev_loader
 
 '''
+@dataclass
+class NormalizationConfig:
+  enabled: bool
+  mean: Optional[list] = None
+  std: Optional[list] = None
+
+@dataclass
+class DataConfig:
+  root: Path
+  num_workers: int
+  batch_size: int
+  sampling: str = "default" # "default" | "weighted"
+  normalization: NormalizationConfig = None
+
+  def __post_init__(self):
+    self.root = Path(self.root)
+    self.normalization = NormalizationConfig(**self.normalization)
+
 def get_dataloaders(data_dir: Path, batch_size: int, g: torch.Generator, sampler:Sampler = None):
   # NOTE: if I add random transforms then I need seed_worker for determinism in dataloading
   transforms = v2.Compose([
