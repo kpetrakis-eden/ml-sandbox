@@ -1,0 +1,35 @@
+defaults:
+  - base_config
+  - _self_
+
+experiment:
+  name: "dummy-exp"
+  run_name: "dummy-run"
+  tracking_uri: "experiments/mlflow.db"
+  artifact_location: "experiments"
+
+seed: 123456789
+
+loss:
+  name: "cross-entropy"
+  focal_gamma: null
+  focal_reduction: null
+
+data:
+  root: "data/processed/classification-expanded-boxes"
+  num_workers: 12
+  batch_size : 256
+  sampling: "default"
+  normalization: null
+    # enabled: false
+    # mean: [0.3994, 0.5100, 0.3541]
+    # std: [0.1831, 0.2149, 0.2105]
+  augmentation: null
+
+class_names:
+  - bud
+  - flower
+  - green
+  - pink
+  - purple
+  - blue
