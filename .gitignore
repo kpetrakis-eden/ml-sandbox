@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+experiments/
 experiments/models/
 
 # Virtual environments
@@ -17,3 +18,5 @@ experiments/models/
 *.db
 
 runs/
+
+*.tar.zst

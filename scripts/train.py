@@ -137,7 +137,7 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
       # plt.tight_layout()
       # fig.savefig(f"conf_matrix_{epoch}.png", dpi=300, bbox_inches="tight")
       # mlflow.log_artifact(f"conf_matrix_{epoch}.png", artifact_path="confusion_matrices")
-      mlflow.log_figure(fig, f"conf_matrix_{epoch:03d}.png")
+      mlflow.log_figure(fig, f"confusion_matrices/conf_matrix_{epoch:03d}.png")
       plt.close(fig)
 
     if dev_loss < best_dev_loss:
@@ -158,10 +158,10 @@ with mlflow.start_run(run_name=RUN_NAME) as run:
     json.dump(report, f, indent=2)
   mlflow.log_artifact("experiments/dev_classification_report.json", artifact_path="reports")
 
-  # model.load_state_dict(best_state)
-  # # model.load_state_dict(torch.load("best.pt"))
-  # mlflow.pytorch.log_model(model, name="best_model")
-  # # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
+  model.load_state_dict(best_state)
+  # model.load_state_dict(torch.load("best.pt"))
+  mlflow.pytorch.log_model(model, name="best_model")
+  # mlflow.pytorch.log_model(model, name="best_model", serialization_format="pt2", input_example=torch.randn(1,3,64,64))
 
   # log best conf matrix
   fig, ax = plt.subplots(figsize=(6,6))
