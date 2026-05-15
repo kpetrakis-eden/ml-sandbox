@@ -17,7 +17,7 @@ from src.utils.reproducibility import seed_everything
 from src.datasets.classification import DataFactory
 # from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
-# from src.utils.extra import set_or_create_experiment, compute_class_weights, build_weighted_sampler
+from src.utils.extra import set_or_create_experiment
 # import mlflow
 
 from src.utils.config import BaseConfig
@@ -40,6 +40,7 @@ def main(cfg:BaseConfig):
   # print(targets[:10])
   loss_fn = get_loss_fn(cfg.loss, train_loader, device)
   # print(loss_fn.weight)
+  # experiment = set_or_create_experiment(cfg.experiment)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
 
 from src.utils.config import DataConfig
+from hydra.utils import instantiate
 
 '''
 @dataclass
@@ -31,40 +32,30 @@ class DataFactory:
   def __init__(self, cfg: DataConfig, generator: torch.Generator):
     self.cfg = cfg
     self.g = generator
+    train_transforms = [v2.ToImage(), v2.Resize((64,64))]
+    dev_transforms = [v2.ToImage(), v2.Resize((64,64))]
+    if cfg.augmentation is not None:
+      train_transforms.extend([instantiate(t) for t in cfg.augmentation])
+
+    train_transforms.append(v2.ToDtype(torch.float32, scale=True))
+    dev_transforms.append(v2.ToDtype(torch.float32, scale=True))
     if cfg.normalization is not None:
-      self.train_transforms = v2.Compose([
-        v2.Resize((64, 64)),
-        v2.ToImage(),
-        # v2.RandomHorizontalFlip(p=0.5),
-        # v2.RandomVerticalFlip(p=0.5),
-        # v2.RandomRotation(degrees=10),
-        # v2.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.01),
-        v2.ToDtype(torch.float32, scale=True),
+      train_transforms.append(
         v2.Normalize(
           mean = self.cfg.normalization.mean,
           std = self.cfg.normalization.std
         )
-      ])
-      self.dev_transforms = v2.Compose([
-        v2.Resize((64, 64)),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
+      )
+      dev_transforms.append(
         v2.Normalize(
           mean = self.cfg.normalization.mean,
           std = self.cfg.normalization.std
         )
-      ])
-    else:
-      self.train_transforms = v2.Compose([
-        v2.Resize((64, 64)),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True)
-      ])
-      self.dev_transforms = v2.Compose([
-        v2.Resize((64, 64)),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True)
-      ])
+      )
+    self.train_transforms = v2.Compose(train_transforms)
+    self.dev_transforms = v2.Compose(dev_transforms)
+    print(f"train transforms: {self.train_transforms}")
+    print(f"dev transforms: {self.dev_transforms}")
 
     self.train_ds = None
     self.dev_ds = None

@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import List, Optional, Literal, TypeAlias
+from typing import List, Optional, Any
 from dataclasses import dataclass, field
+from omegaconf import DictConfig
 # LossName: TypeAlias = Literal["cross-entropy", "focal"]
 
 @dataclass
@@ -22,9 +23,11 @@ class NormalizationConfig:
   mean: List[float]
   std: List[float]
 
+'''
 @dataclass
 class AugmentationConfig:
   pass
+'''
 
 @dataclass
 class DataConfig:
@@ -33,7 +36,7 @@ class DataConfig:
   batch_size : int = 256
   sampling: str = "default"
   normalization: Optional[NormalizationConfig] = None
-  augmentation: Optional[AugmentationConfig] = None
+  augmentation: Optional[Any] = None # this is DictConfig
 
 @dataclass
 class BaseConfig:
@@ -41,5 +44,8 @@ class BaseConfig:
   class_names : List[str]
   data: DataConfig
   experiment : MLFlowConfig
+  num_classes: int
+  lr: float
+  epochs: int
   # data : DataConfig = field(default_factory=DataConfig)
   loss: LossConfig = field(default_factory=LossConfig)

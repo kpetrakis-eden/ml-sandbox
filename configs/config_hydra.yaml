@@ -9,6 +9,9 @@ experiment:
   artifact_location: "experiments"
 
 seed: 123456789
+num_classes : 6
+lr: 1e-3
+epochs: 1
 
 loss:
   name: "cross-entropy"
@@ -20,11 +23,20 @@ data:
   num_workers: 12
   batch_size : 256
   sampling: "default"
-  normalization: null
-    # enabled: false
+  normalization:
     # mean: [0.3994, 0.5100, 0.3541]
     # std: [0.1831, 0.2149, 0.2105]
-  augmentation: null
+  augmentation:
+    # - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+      # p: 0.8
+    # - _target_: torchvision.transforms.v2.RandomVerticalFlip
+      # p: 0.8
+    # - _target_: torchvision.transforms.v2.RandomRotation
+      # degrees: 10
+    # - _target_: torchvision.transforms.v2.ColorJitter
+      # brightness: 0.05
+      # contrast: 0.05
+      # saturation: 0.01
 
 class_names:
   - bud
