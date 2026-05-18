@@ -1,5 +1,11 @@
+import math
+import operator
+from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+from src.utils.config import BaseConfig
+import torchvision.transforms.v2 as v2
 from sklearn.metrics import (
   accuracy_score,
   balanced_accuracy_score,
@@ -44,6 +50,41 @@ def compute_classification_metrics(preds, targets):
   }
 
 
+def plot_pred_dynamics(images:torch.Tensor, targets:torch.Tensor, preds:torch.Tensor, indexes:torch.Tensor, cfg:BaseConfig):
+  class_names = cfg.class_names
+  data_cfg = cfg.data
+  N = len(images)
+  cols = 8
+  rows = math.ceil(N / cols)
+
+  fig, axes = plt.subplots(rows, cols, figsize=(2*cols, 2*rows))
+  axes = axes.flatten()
+  if data_cfg.normalization is not None:
+    mean = list(map(operator.neg, data_cfg.normalization.mean))
+    std = list(map(partial(operator.truediv, 1), data_cfg.normalization.std))
+    denorm = v2.Compose([
+      v2.Normalize(mean=[0,0,0], std=std),
+      v2.Normalize(mean=mean, std=[1,1,1])
+    ])
+  else:
+    denorm = v2.Identity()
+  for ax, img, target, pred, index in zip(axes, images, targets, preds, indexes):
+
+    img = denorm(img)
+    # img = (img - img.min()) / (img.max() - img.min()) # This artifically enhances the image
+    img = img.permute(1,2,0).numpy()
+    ax.imshow(img)
+    ax.set_title(f"{class_names[pred.item()]} ({class_names[target.item()]})", fontsize=12)
+    ax.text(0.5, -0.12, f"{index}", transform=ax.transAxes, ha="center", fontsize=10)
+    ax.axis("off")
+
+  for ax in list(axes)[N:]:
+    ax.axis("off")
+
+  plt.tight_layout()
+  return fig
+
+'''
 def prediction_dynamics(targets, preds, cls_idx, max_images=16):
   wrong_mask = preds != targets
 
@@ -55,3 +96,4 @@ def prediction_dynamics(targets, preds, cls_idx, max_images=16):
 
   # Limit number of displayed images
   wrong_indices = wrong_indices[:max_images]
+'''

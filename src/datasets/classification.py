@@ -1,7 +1,8 @@
 from pathlib import Path
 import numpy as np
+from collections import defaultdict
 import torch
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler, Sampler
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler, Sampler, Subset
 from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
 
@@ -12,6 +13,15 @@ class DataFactory:
   def __init__(self, cfg: DataConfig, generator: torch.Generator):
     self.cfg = cfg
     self.g = generator
+    # Construct a visualization dataloader with that many samples from each class, to draw prediction dynamics on.
+    self.viz_samples_per_class = {
+      0: 10,
+      1: 10,
+      2: 10,
+      4: 50,
+      5: 50,
+      6: 50,
+    }
     train_transforms = [v2.ToImage(), v2.Resize((64,64))]
     dev_transforms = [v2.ToImage(), v2.Resize((64,64))]
     if cfg.augmentation is not None:
@@ -40,6 +50,7 @@ class DataFactory:
     self.train_ds = None
     self.dev_ds = None
     self.sampler = None
+    self.viz_subset:Subset = None
 
   def build_datasets(self):
     self.train_ds = ImageFolder(self.cfg.root / "train", transform=self.train_transforms)
@@ -70,6 +81,37 @@ class DataFactory:
     dev_loader = DataLoader(self.dev_ds, batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.num_workers, generator=self.g)
 
     return train_loader, dev_loader
+
+
+  def build_viz_loader(self):
+    viz_loader = DataLoader(self.viz_subset, batch_size=self.cfg.batch_size, shuffle=False)
+    return viz_loader
+
+  def build_viz_subset(self, seed:int):
+    if self.dev_ds is None:
+      raise RuntimeError("Dev dataset is None, build_datasets() first")
+
+    rng = np.random.default_rng(seed)
+    class_to_indices = defaultdict(list)
+    # ImageFolder exposes labels in dataset.targets
+    for idx, label in enumerate(self.dev_ds.targets):
+      class_to_indices[label].append(idx)
+
+    subset_indices = []
+    for label, indices in class_to_indices.items():
+      # n_select = min(samples_per_class, len(indices))
+      n_select = min(self.viz_samples_per_class.get(label, 5), len(indices))
+      selected = rng.choice(indices, size=n_select, replace=False)
+
+      print(f"{label}: {selected}")
+
+      subset_indices.extend(selected)
+
+    rng.shuffle(subset_indices)
+    self.viz_subset = Subset(self.dev_ds, subset_indices)
+    return self
+    # return Subset(self.dev_ds, subset_indices)
+
 
 '''
 @dataclass

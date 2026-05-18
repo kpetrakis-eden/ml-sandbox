@@ -13,11 +13,15 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from src.utils.reproducibility import seed_everything
 from src.models.resnet import get_resnet18
-from src.datasets.classification import DataFactory
+from src.datasets.classification import DataFactory#, create_balanced_subset
 from src.trainers.default import Trainer
 from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment
+from src.utils.metrics import plot_pred_dynamics
 import mlflow
+
+from torch.utils.data import DataLoader
+import numpy as np
 
 from src.utils.config import BaseConfig
 import hydra
@@ -35,6 +39,7 @@ def main(cfg:BaseConfig):
   generator = torch.Generator().manual_seed(cfg.seed)
   data_factory = DataFactory(cfg.data, generator)
   train_loader, dev_loader = data_factory.build_datasets().build_sampler().build_loaders()
+  viz_loader = data_factory.build_viz_subset(cfg.seed).build_viz_loader()
   # _, targets = next(iter(train_loader))
   # print(targets[:10])
   model = get_resnet18(num_classes=cfg.num_classes)
@@ -42,7 +47,7 @@ def main(cfg:BaseConfig):
   # print(loss_fn.weight)
   experiment = set_or_create_experiment(cfg.experiment)
   optimizer = Adam
-  trainer = Trainer(model, train_loader, dev_loader, loss_fn, optimizer, device, lr=cfg.lr)
+  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, device, lr=cfg.lr)
 
   with mlflow.start_run(run_name=cfg.experiment.run_name) as run:
     mlflow.set_tags({
@@ -67,6 +72,9 @@ def main(cfg:BaseConfig):
     for epoch in pbar:
       loss, metrics = trainer.train_one_epoch()
       dev_loss, dev_metrics = trainer.validate_one_epoch()
+      wrong_images, wrong_targets, wrong_preds, wrong_indexes = trainer.prediction_dynamics()
+      fig = plot_pred_dynamics(wrong_images, wrong_targets, wrong_preds, wrong_indexes, cfg)
+      fig.savefig(f"pred_dynamics_{epoch}.png")
       pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})
       if dev_loss < best_dev_loss:
         best_dev_loss = dev_loss

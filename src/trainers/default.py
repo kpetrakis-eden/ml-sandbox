@@ -6,10 +6,11 @@ from tqdm.auto import tqdm
 from src.utils.metrics import compute_classification_metrics
 
 class Trainer:
-  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, device:torch.device, lr:float):
+  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, viz_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, device:torch.device, lr:float):
     self.model = model.to(device)
     self.train_loader = train_loader
     self.dev_loader = dev_loader
+    self.viz_loader = viz_loader
     self.device = device
     self.loss_fn = loss_fn
     # self.loss_fn = nn.CrossEntropyLoss()
@@ -74,3 +75,41 @@ class Trainer:
     # return dev_loss / len(self.dev_loader), correct / len(self.dev_loader.dataset)
     return dev_loss / len(self.dev_loader), metrics
 
+
+  @torch.no_grad()
+  def prediction_dynamics(self):
+    self.model.eval()
+    wrong_images = []
+    wrong_targets = []
+    wrong_preds = []
+    wrong_indexes = []
+    pbar = tqdm(self.viz_loader, desc="Visualization loader", leave=False)
+    for idx, (Xb, Yb) in enumerate(pbar):
+      Xb, Yb = Xb.to(self.device), Yb.to(self.device)
+      out = self.model(Xb)
+      pred = out.argmax(dim=1)
+
+      wrong_mask = pred != Yb
+
+      if wrong_mask.any():
+        # print(len(wrong_mask))
+        wrong_images.append(Xb[wrong_mask].cpu())
+        wrong_targets.append(Yb[wrong_mask].cpu())
+        wrong_preds.append(pred[wrong_mask].cpu())
+
+        # this is the index relativee to viz_loader total size.
+        viz_indices = torch.arange(Xb.size(0)) + idx * Xb.size(0)
+        viz_indices = viz_indices.to(self.device)
+        wrong_indexes.append(viz_indices[wrong_mask].cpu())
+
+      # TODO: keep only max_images ?? 
+
+    if len(wrong_images) == 0:
+      return None
+
+    wrong_images = torch.cat(wrong_images)
+    wrong_targets = torch.cat(wrong_targets)
+    wrong_preds = torch.cat(wrong_preds)
+    wrong_indexes = torch.cat(wrong_indexes)
+
+    return wrong_images, wrong_targets, wrong_preds, wrong_indexes
