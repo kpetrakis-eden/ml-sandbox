@@ -9,9 +9,15 @@ experiment:
   artifact_location: "experiments"
 
 seed: 123456789
-num_classes : 6
+# num_classes : 6
 lr: 1e-3
 epochs: 2
+
+model:
+  name: "resnet18"
+  num_classes: 6
+  pretrained: true
+  default_resnet_downsize: true
 
 loss:
   name: "cross-entropy"

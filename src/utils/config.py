@@ -16,6 +16,13 @@ class LossConfig:
   name: str = "cross-entropy"
   focal_gamma: Optional[float] = None
   focal_reduction: Optional[str] = None
+
+@dataclass
+class ModelConfig:
+  name: str
+  pretrained: bool
+  num_classes: int
+  default_resnet_downsize: bool
   
 @dataclass
 class NormalizationConfig:
@@ -44,7 +51,8 @@ class BaseConfig:
   class_names : List[str]
   data: DataConfig
   experiment : MLFlowConfig
-  num_classes: int
+  model: ModelConfig
+  # num_classes: int
   lr: float
   epochs: int
   # data : DataConfig = field(default_factory=DataConfig)

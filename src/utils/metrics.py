@@ -57,8 +57,6 @@ def plot_pred_dynamics(images:torch.Tensor, targets:torch.Tensor, preds:torch.Te
   cols = 8
   rows = math.ceil(N / cols)
 
-  fig, axes = plt.subplots(rows, cols, figsize=(2*cols, 2*rows))
-  axes = axes.flatten()
   if data_cfg.normalization is not None:
     mean = list(map(operator.neg, data_cfg.normalization.mean))
     std = list(map(partial(operator.truediv, 1), data_cfg.normalization.std))
@@ -68,6 +66,9 @@ def plot_pred_dynamics(images:torch.Tensor, targets:torch.Tensor, preds:torch.Te
     ])
   else:
     denorm = v2.Identity()
+
+  fig, axes = plt.subplots(rows, cols, figsize=(2*cols, 2*rows))
+  axes = axes.flatten()
   for ax, img, target, pred, index in zip(axes, images, targets, preds, indexes):
 
     img = denorm(img)
