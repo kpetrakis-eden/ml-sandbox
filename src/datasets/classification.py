@@ -58,6 +58,8 @@ class DataFactory:
     return self
 
   def build_sampler(self):
+    if self.cfg.sampling not in ["default", "weighted"]:
+      raise ValueError(f"Sampling method {self.cfg.sampling} not supported.")
     if self.cfg.sampling != "weighted":
       self.sampler = None
       return self
