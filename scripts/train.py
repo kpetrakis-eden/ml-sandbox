@@ -13,15 +13,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from src.utils.reproducibility import seed_everything
 from src.models.factory import get_model
-from src.datasets.classification import DataFactory#, create_balanced_subset
+from src.datasets.classification import DataFactory
 from src.trainers.default import Trainer
+from src.optimizers.optimizer import get_optimizer
 from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment
 from src.utils.metrics import plot_pred_dynamics
 import mlflow
-
-from torch.utils.data import DataLoader
-import numpy as np
 
 from src.utils.config import BaseConfig
 import hydra
@@ -45,10 +43,13 @@ def main(cfg:BaseConfig):
   model = get_model(cfg.model)
   loss_fn = get_loss_fn(cfg.loss, train_loader, device)
   # print(loss_fn.weight)
-  experiment = set_or_create_experiment(cfg.experiment)
-  optimizer = Adam
-  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, device, lr=cfg.lr)
+  # optimizer = Adam
+  # trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, device, lr=cfg.lr)
+  optimizer = get_optimizer(cfg.optimizer, model)
+  scheduler = None
+  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
 
+  experiment = set_or_create_experiment(cfg.experiment)
   with mlflow.start_run(run_name=cfg.experiment.run_name) as run:
     mlflow.set_tags({
       "stage": "research",

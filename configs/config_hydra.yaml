@@ -9,21 +9,7 @@ experiment:
   artifact_location: "experiments"
 
 seed: 123456789
-# num_classes : 6
-lr: 1e-3
 epochs: 2
-
-model:
-  name: "resnet18"
-  num_classes: 6
-  pretrained: true
-  default_resnet_downsize: true
-
-loss:
-  name: "cross-entropy"
-  focal_gamma: null
-  focal_reduction: null
-
 data:
   root: "data/processed/classification-expanded-boxes"
   num_workers: 12
@@ -43,6 +29,34 @@ data:
       # brightness: 0.05
       # contrast: 0.05
       # saturation: 0.01
+
+model:
+  name: "resnet18"
+  num_classes: 6
+  pretrained: true
+  default_resnet_downsize: true
+
+optimizer:
+  name: "adamw"
+  lr: 1e-4
+  weight_decay: 0
+  betas:
+  momentum:
+  nesterov:
+
+scheduler:
+  # name: ""
+  # T_max:
+  # eta_min:
+  # step_size:
+  # gamma:
+  # factor:
+  # last_epoch:
+
+loss:
+  name: "cross-entropy"
+  focal_gamma: null
+  focal_reduction: null
 
 class_names:
   - bud

@@ -1,21 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from src.utils.metrics import compute_classification_metrics
 
 class Trainer:
-  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, viz_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, device:torch.device, lr:float):
+  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, viz_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, scheduler:lr_scheduler, device:torch.device):
     self.model = model.to(device)
     self.train_loader = train_loader
     self.dev_loader = dev_loader
     self.viz_loader = viz_loader
     self.device = device
     self.loss_fn = loss_fn
-    # self.loss_fn = nn.CrossEntropyLoss()
+    self.optimizer = optimizer
+    self.scheduler = scheduler
+    '''
     self.optimizer = optimizer(model.parameters(), lr=lr)
     # self.optimizer = Adam(model.parameters(), lr=lr)
+    '''
 
   def train_one_epoch(self):
     '''

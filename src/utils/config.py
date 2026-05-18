@@ -46,14 +46,34 @@ class DataConfig:
   augmentation: Optional[Any] = None # this is DictConfig
 
 @dataclass
+class OptimizerConfig:
+  name: str
+  lr: float = 1e-4
+  weight_decay: float = 0
+  betas: Optional[List[float]] = field(default_factory=lambda: [0.9, 0.999])
+  momentum: Optional[float] = None
+  nesterov: Optional[bool] = False
+
+@dataclass
+class SchedulerConfig:
+  name: str = "cosine"
+  T_max: Optional[int] = None
+  eta_min: float = 1e-6
+  step_size: Optional[int] = None
+  gamma: Optional[float] = None
+  factor: Optional[float] = None
+  last_epoch: Optional[int] = None
+
+@dataclass
 class BaseConfig:
   seed: int
   class_names : List[str]
   data: DataConfig
   experiment : MLFlowConfig
   model: ModelConfig
+  optimizer: OptimizerConfig
+  scheduler: Optional[SchedulerConfig]
   # num_classes: int
-  lr: float
   epochs: int
   # data : DataConfig = field(default_factory=DataConfig)
   loss: LossConfig = field(default_factory=LossConfig)
