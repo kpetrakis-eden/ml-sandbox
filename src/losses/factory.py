@@ -11,6 +11,7 @@ def get_loss_fn(loss_cfg: LossConfig, dataloader:DataLoader, device:torch.device
     return nn.CrossEntropyLoss()
   elif loss_name == "cross-entropy-weighted":
     class_weights = compute_class_weights(dataloader, device)
+    print(f"Class Weights = {class_weights}")
     return nn.CrossEntropyLoss(weight=class_weights)
   elif loss_name == "focal":
     # gamma = loss_config['loss']['focal_gamma']

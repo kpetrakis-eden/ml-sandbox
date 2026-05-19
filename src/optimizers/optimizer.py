@@ -2,6 +2,7 @@ from src.utils.config import OptimizerConfig, SchedulerConfig
 import torch
 import torch.nn as nn
 from torch.optim import AdamW, SGD
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, StepLR
 
 
 def get_optimizer(cfg:OptimizerConfig, model:nn.Module):
@@ -16,4 +17,16 @@ def get_optimizer(cfg:OptimizerConfig, model:nn.Module):
 
 
 def get_scheduler(cfg:SchedulerConfig, optimizer:torch.optim):
-  raise NotImplementedError
+  # no scheduler specified in config
+  if cfg is None:
+    return None
+  else:
+    match cfg.name:
+      case "cosine":
+        return CosineAnnealingLR(optimizer=optimizer, T_max=cfg.T_max) 
+      case "linear":
+        return LinearLR(opitmizer=optimizer, start_factor=cfg.start_factor, end_factor=cfg.end_factor, total_iterls=cfg.total_iters)
+      case "step":
+        return StepLR(optimizer=optimizer, step_size=cfg.step_size, gamma=cfg.gamma)
+      case _:
+        return None

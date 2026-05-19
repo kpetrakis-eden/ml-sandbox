@@ -47,6 +47,10 @@ class Trainer:
       all_targets.append(Yb.cpu())
       # correct += pred.eq(Yb).float().sum().item()
 
+    # TODO: this works for epoch update scheduler. If I use a per batch one stepping here is wrong !
+    if self.scheduler is not None:
+      self.scheduler.step()
+
     all_preds = torch.cat(all_preds).numpy()
     all_targets = torch.cat(all_targets).numpy()
     metrics = compute_classification_metrics(all_preds, all_targets)

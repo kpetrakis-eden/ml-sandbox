@@ -4,12 +4,12 @@ defaults:
 
 experiment:
   name: "BLUEBERRIES-EXPANDED-BBOXES"
-  run_name: "effv2s-norm-wsampl"
+  run_name: "convnext-norm-wsampl-aug1-cos"
   tracking_uri: "experiments/mlflow.db"
   artifact_location: "experiments"
 
 seed: 123456789
-epochs: 20
+epochs: 10
 data:
   root: "data/processed/classification-expanded-boxes"
   num_workers: 12
@@ -19,22 +19,27 @@ data:
     mean: [0.3994, 0.5100, 0.3541]
     std: [0.1831, 0.2149, 0.2105]
   augmentation:
-    # - _target_: torchvision.transforms.v2.RandomHorizontalFlip
-      # p: 0.8
-    # - _target_: torchvision.transforms.v2.RandomVerticalFlip
-      # p: 0.8
-    # - _target_: torchvision.transforms.v2.RandomRotation
-      # degrees: 10
-    # - _target_: torchvision.transforms.v2.ColorJitter
-      # brightness: 0.05
-      # contrast: 0.05
-      # saturation: 0.01
+    - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+      p: 0.5
+    - _target_: torchvision.transforms.v2.RandomVerticalFlip
+      p: 0.5
+    - _target_: torchvision.transforms.v2.RandomRotation
+      degrees: 10
+    - _target_: torchvision.transforms.v2.ColorJitter
+      brightness: 0.05
+      contrast: 0.05
+      saturation: 0.01
 
 model:
-  name: "efficientnet"
+  name: "convnext"
   num_classes: 6
   pretrained: true
   default_resnet_downsize: true
+
+loss:
+  name: "cross-entropy"
+  focal_gamma: null
+  focal_reduction: null
 
 optimizer:
   name: "adamw"
@@ -45,18 +50,13 @@ optimizer:
   nesterov:
 
 scheduler:
-  # name: ""
-  # T_max:
-  # eta_min:
+  # name: "cosine"
+  # T_max: ${epochs} 
+  # eta_min: 5e-5
   # step_size:
   # gamma:
   # factor:
   # last_epoch:
-
-loss:
-  name: "cross-entropy"
-  focal_gamma: null
-  focal_reduction: null
 
 class_names:
   - bud

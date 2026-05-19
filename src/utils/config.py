@@ -56,13 +56,26 @@ class OptimizerConfig:
 
 @dataclass
 class SchedulerConfig:
+  name: str
+
+@dataclass
+class CosineSchedulerConfig(SchedulerConfig):
   name: str = "cosine"
-  T_max: Optional[int] = None
-  eta_min: float = 1e-6
-  step_size: Optional[int] = None
-  gamma: Optional[float] = None
-  factor: Optional[float] = None
-  last_epoch: Optional[int] = None
+  T_max: int = 10
+  eta_min: float = 0.0
+
+@dataclass
+class LinearSchedulerConfig(SchedulerConfig):
+  name: str = "linear"
+  start_factor: float = 1./3
+  end_factor: float = 1.0
+  total_iters: int = 5
+
+@dataclass
+class StepSchedulerConfig(SchedulerConfig):
+  name: str = "step"
+  step_size: int = 3
+  gamma: float = 0.1
 
 @dataclass
 class BaseConfig:

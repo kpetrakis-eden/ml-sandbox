@@ -15,7 +15,7 @@ from src.utils.reproducibility import seed_everything
 from src.models.factory import get_model
 from src.datasets.classification import DataFactory
 from src.trainers.default import Trainer
-from src.optimizers.optimizer import get_optimizer
+from src.optimizers.optimizer import get_optimizer, get_scheduler
 from src.losses.factory import get_loss_fn
 from src.utils.extra import set_or_create_experiment
 from src.utils.metrics import plot_pred_dynamics
@@ -46,7 +46,8 @@ def main(cfg:BaseConfig):
   # optimizer = Adam
   # trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, device, lr=cfg.lr)
   optimizer = get_optimizer(cfg.optimizer, model)
-  scheduler = None
+  scheduler = get_scheduler(cfg.scheduler, optimizer)
+  print(f"Scheduler: {scheduler}")
   trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
 
   experiment = set_or_create_experiment(cfg.experiment)
@@ -68,6 +69,7 @@ def main(cfg:BaseConfig):
     best_conf_matrix = None
     pbar = tqdm(range(1, cfg.epochs+1), desc="Main Loop", unit="epoch")
     for epoch in pbar:
+      tqdm.write(f"using lr: {optimizer.param_groups[0]['lr']}") # to verify scheduler works as expected
       loss, metrics = trainer.train_one_epoch()
       dev_loss, dev_metrics = trainer.validate_one_epoch()
       pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})
