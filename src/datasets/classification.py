@@ -86,6 +86,9 @@ class DataFactory:
 
 
   def build_viz_loader(self):
+    '''
+    return Dataloader, which is a subset of the dev_dataset to log predictions dynamics on
+    '''
     viz_loader = DataLoader(self.viz_subset, batch_size=self.cfg.batch_size, shuffle=False)
     return viz_loader
 

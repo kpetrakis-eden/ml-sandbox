@@ -115,6 +115,19 @@ def main(cfg:BaseConfig):
         wrong_images, wrong_targets, wrong_preds, wrong_indexes = trainer.prediction_dynamics()
         best_pred_dynamics_fig = plot_pred_dynamics(wrong_images, wrong_targets, wrong_preds, wrong_indexes, cfg)
 
+        tqdm.write(
+          f"saved model at epoch {epoch} with: "
+          f"dev_loss {dev_loss:.4f} | "
+          f"dev_acc {dev_metrics['acc']:.2f}% | "
+          f"dev_balanced_acc: {dev_metrics['balanced_acc']:.2f}% | "
+          f"dev_f1_macro: {dev_metrics['f1_macro']:.2f}% | "
+          f"dev_f1_weighted: {dev_metrics['f1_weighted']:.2f}% | "
+          f"dev_precision_macro: {dev_metrics['precision_macro']:.2f}% | "
+          f"dev_precision_weighted: {dev_metrics['precision_weighted']:.2f}% | "
+          f"dev_recall_macro: {dev_metrics['recall_macro']:.2f}% | "
+          f"dev_recall_weighted: {dev_metrics['recall_weighted']:.2f}%"
+        )
+
     # log best classification report
     with open("experiments/classification_report_at_min_loss.json", "w") as f:
       json.dump(report, f, indent=2)
