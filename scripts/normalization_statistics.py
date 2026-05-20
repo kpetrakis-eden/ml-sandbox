@@ -35,7 +35,8 @@ def compute_normalization_statistics(data_dir:Path):
 
 # Usage: uv run python -m scripts.normalization_statistics
 if __name__ == "__main__":
-  data_dir = Path("data/processed/classification-expanded-boxes") # same as in config.yaml
+  # data_dir = Path("data/processed/classification-expanded-boxes") # same as in config.yaml
+  data_dir = Path("data/processed/classification")
   mean, std = compute_normalization_statistics(data_dir)
   print(f"Mean: {mean} | std: {std}")
   # print(f"Mean: {mean.tolist()} | std: {std.tolist()}")

@@ -1,5 +1,6 @@
 defaults:
   - base_config
+  - scheduler: cosine
   - _self_
 
 experiment:
@@ -9,7 +10,7 @@ experiment:
   artifact_location: "experiments"
 
 seed: 123456789
-epochs: 10
+epochs: 20
 data:
   root: "data/processed/classification-expanded-boxes"
   num_workers: 12
@@ -43,20 +44,11 @@ loss:
 
 optimizer:
   name: "adamw"
-  lr: 1e-4
+  lr: 1e-3
   weight_decay: 0
   betas:
   momentum:
   nesterov:
-
-scheduler:
-  # name: "cosine"
-  # T_max: ${epochs} 
-  # eta_min: 5e-5
-  # step_size:
-  # gamma:
-  # factor:
-  # last_epoch:
 
 class_names:
   - bud

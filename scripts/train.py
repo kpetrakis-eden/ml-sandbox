@@ -27,8 +27,11 @@ from hydra.core.config_store import ConfigStore
 
 cs = ConfigStore.instance()
 cs.store(name="base_config", node=BaseConfig)
-
-@hydra.main(version_base=None, config_path="../configs", config_name="config_hydra.yaml")
+# scheduler group
+# cs.store(group="scheduler", name="cosine", node=CosineSchedulerConfig)
+# cs.store(group="scheduler", name="linear", node=LinearSchedulerConfig)
+# cs.store(group="scheduler", name="step", node=StepSchedulerConfig)
+@hydra.main(version_base=None, config_path="../configs", config_name="config_hydra2.yaml")
 def main(cfg:BaseConfig):
   print(cfg)
 
@@ -47,7 +50,7 @@ def main(cfg:BaseConfig):
   # trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, device, lr=cfg.lr)
   optimizer = get_optimizer(cfg.optimizer, model)
   scheduler = get_scheduler(cfg.scheduler, optimizer)
-  print(f"Scheduler: {scheduler}")
+  # print(f"Scheduler: {scheduler.eta_min} , {scheduler.T_max}")
   trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
 
   experiment = set_or_create_experiment(cfg.experiment)
@@ -69,7 +72,7 @@ def main(cfg:BaseConfig):
     best_conf_matrix = None
     pbar = tqdm(range(1, cfg.epochs+1), desc="Main Loop", unit="epoch")
     for epoch in pbar:
-      tqdm.write(f"using lr: {optimizer.param_groups[0]['lr']}") # to verify scheduler works as expected
+      # tqdm.write(f"using lr: {optimizer.param_groups[0]['lr']}") # to verify scheduler works as expected
       loss, metrics = trainer.train_one_epoch()
       dev_loss, dev_metrics = trainer.validate_one_epoch()
       pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})

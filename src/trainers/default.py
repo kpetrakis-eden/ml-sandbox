@@ -47,7 +47,7 @@ class Trainer:
       all_targets.append(Yb.cpu())
       # correct += pred.eq(Yb).float().sum().item()
 
-    # TODO: this works for epoch update scheduler. If I use a per batch one stepping here is wrong !
+    # TODO: this works for update per epoch schedulers. If I use a per batch one stepping here is wrong !
     if self.scheduler is not None:
       self.scheduler.step()
 

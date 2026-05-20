@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 from dataclasses import dataclass, field
 from omegaconf import DictConfig
 # LossName: TypeAlias = Literal["cross-entropy", "focal"]
@@ -84,9 +84,9 @@ class BaseConfig:
   data: DataConfig
   experiment : MLFlowConfig
   model: ModelConfig
-  optimizer: OptimizerConfig
-  scheduler: Optional[SchedulerConfig]
   # num_classes: int
   epochs: int
+  optimizer: OptimizerConfig
+  scheduler: Optional[Any] = None # instead of Optional[SchedulerConfig]
   # data : DataConfig = field(default_factory=DataConfig)
   loss: LossConfig = field(default_factory=LossConfig)

@@ -23,6 +23,7 @@ def get_scheduler(cfg:SchedulerConfig, optimizer:torch.optim):
   else:
     match cfg.name:
       case "cosine":
+        print("cosine matched")
         return CosineAnnealingLR(optimizer=optimizer, T_max=cfg.T_max) 
       case "linear":
         return LinearLR(opitmizer=optimizer, start_factor=cfg.start_factor, end_factor=cfg.end_factor, total_iterls=cfg.total_iters)
