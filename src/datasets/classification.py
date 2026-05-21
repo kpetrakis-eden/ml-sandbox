@@ -1,8 +1,9 @@
 from pathlib import Path
+import math
 import numpy as np
 from collections import defaultdict
 import torch
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler, Sampler, Subset
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler,Subset, BatchSampler
 from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
 
@@ -58,8 +59,21 @@ class DataFactory:
     return self
 
   def build_sampler(self):
-    if self.cfg.sampling not in ["default", "weighted"]:
+    if self.cfg.sampling not in ["default", "weighted", "balanced"]:
       raise ValueError(f"Sampling method {self.cfg.sampling} not supported.")
+    if self.cfg.sampling == "weighted":
+      class_counts = np.bincount(self.train_ds.targets)
+      class_weights = 1.0 / class_counts
+      sample_weights = class_weights[self.train_ds.targets]
+
+      self.sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+    elif self.cfg.sampling == "balanced":
+      self.sampler = BalancedBatchSampler(self.train_ds.targets, self.cfg.batch_size, self.g)
+    else:
+      self.sampler = None
+
+    return self
+    '''
     if self.cfg.sampling != "weighted":
       self.sampler = None
       return self
@@ -70,6 +84,7 @@ class DataFactory:
 
     self.sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
     return self
+    '''
 
   def build_loaders(self):
     if self.train_ds is None or self.dev_ds is None:
@@ -78,7 +93,10 @@ class DataFactory:
     if self.sampler is None:
       train_loader = DataLoader(self.train_ds, batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.num_workers, generator=self.g)
     else:
-      train_loader = DataLoader(self.train_ds, batch_size=self.cfg.batch_size, sampler=self.sampler, num_workers=self.cfg.num_workers, generator=self.g)
+      if isinstance(self.sampler, WeightedRandomSampler):
+        train_loader = DataLoader(self.train_ds, batch_size=self.cfg.batch_size, sampler=self.sampler, num_workers=self.cfg.num_workers, generator=self.g)
+      elif isinstance(self.sampler, BalancedBatchSampler):
+        train_loader = DataLoader(self.train_ds, batch_sampler=self.sampler, num_workers=self.cfg.num_workers, generator=self.g)
 
     dev_loader = DataLoader(self.dev_ds, batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.num_workers, generator=self.g)
 
@@ -114,6 +132,48 @@ class DataFactory:
     self.viz_subset = Subset(self.dev_ds, subset_indices)
     return self
 
+class BalancedBatchSampler(BatchSampler):
+  def __init__(self, targets, batch_size, g:torch.Generator):
+
+    self.targets = np.array(targets, dtype=np.int64)
+    self.batch_size = batch_size
+    self.classes = np.unique(self.targets).tolist()
+    self.n_classes = len(self.classes)
+    self.g = g
+
+    self.samples_per_class = batch_size // self.n_classes
+
+    assert self.targets.ndim == 1, "targets should be 1d"
+    assert self.batch_size % self.n_classes == 0, "batch size should be a multiple of num_classes"
+
+    # targets has to be a np.array for this to be safe, otherwise is wrong
+    self.class_indices = { c: np.nonzero(self.targets == c)[0] for c in self.classes }
+
+     # Minority class size
+    self.minority_size = min( len(v) for v in self.class_indices.values())
+    self.n_batches = math.ceil(self.minority_size / self.samples_per_class)
+
+  def __len__(self):
+    return self.n_batches
+
+  def __iter__(self):
+    shuffled = {} # same as class_indices , but shuffled
+    for c, idxs in self.class_indices.items():
+      perm = torch.randperm(len(idxs), generator=self.g)
+      shuffled[c] = idxs.copy()[perm]
+
+    for batch_idx in range(self.n_batches):
+      batch = []
+
+      start = batch_idx*self.samples_per_class
+      end = start + self.samples_per_class # for the last batch and minority class this is > len(idxes) but is ok, i just keep the remaining
+
+      for c in self.classes:
+        batch.extend(shuffled[c][start:end].tolist())
+
+      bperm = torch.randperm(len(batch), generator=self.g)
+      batch = [batch[i] for i in bperm]
+      yield batch
 
 # v2.Normalize(mean=[0.4292, 0.5389, 0.3654], std=[0.1860, 0.2121, 0.1966])
 # [0.4291510581970215, 0.5389042496681213, 0.3654465973377228], [0.18595948815345764, 0.21214619278907776, 0.19659456610679626]
