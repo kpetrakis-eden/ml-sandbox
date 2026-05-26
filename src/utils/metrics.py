@@ -50,6 +50,39 @@ def compute_classification_metrics(preds, targets):
   }
 
 
+def compute_classification_metrics_for_classifier_yolo_comparison(preds, targets, label_ids):
+  accuracy = accuracy_score(targets, preds)
+  balanced_accuracy = balanced_accuracy_score(targets, preds)
+
+  f1_macro = f1_score(targets, preds, average='macro')
+  f1_weighted = f1_score(targets, preds, average='weighted')
+
+  precision_macro = precision_score(targets, preds, average='macro', zero_division=0)
+  precision_weighted = precision_score(targets, preds, average='weighted', zero_division=0)
+
+  recall_macro = recall_score(targets, preds, average='macro', zero_division=0)
+  recall_weighted = recall_score(targets, preds, average='weighted', zero_division=0)
+
+  # conf_matrix = confusion_matrix(targets, preds, normalize='true')
+  conf_matrix = confusion_matrix(targets, preds, normalize=None, labels=label_ids)
+  # disp = ConfusionMatrixDisplay(conf_matrix, display_labels=class_names, cmap=plt.cm.Blues)
+
+  per_class_report = classification_report(targets, preds, output_dict=True, zero_division=0)
+
+  return {
+    "acc": accuracy * 100,
+    "balanced_acc": balanced_accuracy * 100,
+    "f1_macro": f1_macro * 100,
+    "f1_weighted": f1_weighted * 100,
+    "precision_macro": precision_macro * 100,
+    "precision_weighted": precision_weighted * 100,
+    "recall_macro": recall_macro * 100,
+    "recall_weighted": recall_weighted * 100,
+    "confusion_matrix": conf_matrix,
+    "classification_report": per_class_report
+  }
+
+
 def plot_pred_dynamics(images:torch.Tensor, targets:torch.Tensor, preds:torch.Tensor, indexes:torch.Tensor, cfg:BaseConfig):
   class_names = cfg.class_names
   data_cfg = cfg.data
