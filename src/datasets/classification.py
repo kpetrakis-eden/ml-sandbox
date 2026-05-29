@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 import math
 import numpy as np
 from collections import defaultdict
@@ -6,14 +7,20 @@ import torch
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler,Subset, BatchSampler
 from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
+import torchvision.transforms.functional as TF
 
 from src.utils.config import DataConfig
+from src.utils.extra import PadToSquare
 from hydra.utils import instantiate
 
 class DataFactory:
   def __init__(self, cfg: DataConfig, generator: torch.Generator):
     self.cfg = cfg
     self.g = generator
+    self.INTERPOLATION_MODE_MAP = {
+      "bilinear": v2.InterpolationMode.BILINEAR,
+      "bicubic": v2.InterpolationMode.BICUBIC
+    }
     # Construct a visualization dataloader with that many samples from each class, to draw prediction dynamics on.
     self.viz_samples_per_class = {
       0: 10,
@@ -23,8 +30,22 @@ class DataFactory:
       4: 50,
       5: 60,
     }
-    train_transforms = [v2.ToImage(), v2.Resize((64,64))]
-    dev_transforms = [v2.ToImage(), v2.Resize((64,64))]
+    train_transforms = [v2.ToImage()]
+    dev_transforms = [v2.ToImage()]
+    if cfg.preprocessing is not None:
+      print("Specified Preprocessing")
+      if cfg.preprocessing.padding_mode is not None:
+        train_transforms.extend([PadToSquare(padding_mode=cfg.preprocessing.padding_mode), v2.Resize((cfg.preprocessing.img_size, cfg.preprocessing.img_size), interpolation=self.INTERPOLATION_MODE_MAP[cfg.preprocessing.interpolation])])
+        dev_transforms.extend([PadToSquare(padding_mode=cfg.preprocessing.padding_mode), v2.Resize((cfg.preprocessing.img_size, cfg.preprocessing.img_size), interpolation=self.INTERPOLATION_MODE_MAP[cfg.preprocessing.interpolation])])
+      else:
+        # only resize specified
+        train_transforms.append(v2.Resize((cfg.preprocessing.img_size, cfg.preprocessing.img_size), interpolation=self.INTERPOLATION_MODE_MAP[cfg.preprocessing.interpolation]))
+        dev_transforms.append(v2.Resize((cfg.preprocessing.img_size, cfg.preprocessing.img_size), interpolation=self.INTERPOLATION_MODE_MAP[cfg.preprocessing.interpolation]))
+    else:
+      print("Default Preprocessing")
+      # default preprocessing, as before
+      train_transforms.append(v2.Resize((64,64), interpolation=v2.InterpolationMode.BILINEAR))
+      dev_transforms.append(v2.Resize((64,64), interpolation=v2.InterpolationMode.BILINEAR))
     if cfg.augmentation is not None:
       train_transforms.extend([instantiate(t) for t in cfg.augmentation])
 

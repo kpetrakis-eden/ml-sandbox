@@ -1,9 +1,33 @@
 # TODO: name this file appropriately
+from typing import Optional
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from src.utils.config import MLFlowConfig
+import torchvision.transforms.v2.functional as V2F
 import mlflow
+
+class PadToSquare:
+  def __init__(self, padding_mode:str='edge', fill:Optional[int]=0):
+    self.fill = fill
+    self.padding_mode = padding_mode
+
+  def __call__(self, img):
+    h, w = img.shape[-2:]
+    max_wh = max(w, h)
+
+    pad_left = (max_wh - w) // 2
+    pad_right = max_wh - w - pad_left
+    pad_top = (max_wh - h) // 2
+    pad_bottom = max_wh - h - pad_top
+
+    padding = [pad_left, pad_top, pad_right, pad_bottom]
+    return V2F.pad(img, padding, padding_mode=self.padding_mode) # faster?
+    # return v2.Pad(padding, padding_mode=self.padding_mode)(img)
+
+  def __repr__(self):
+    return (f"{self.__class__.__name__}(" f"padding_mode={self.padding_mode!r}, " f"fill={self.fill})")
+
 
 def compute_class_weights(dataloader:DataLoader, device:torch.device):
   '''

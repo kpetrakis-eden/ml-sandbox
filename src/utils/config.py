@@ -42,6 +42,7 @@ class DataConfig:
   num_workers: Optional[int] = 12
   batch_size : int = 256
   sampling: str = "default"
+  preprocessing: Optional[Any] = None
   normalization: Optional[NormalizationConfig] = None
   augmentation: Optional[Any] = None # this is DictConfig
 

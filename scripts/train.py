@@ -152,6 +152,5 @@ def main(cfg:BaseConfig):
     model.load_state_dict(best_state)
     mlflow.pytorch.log_model(model, name="best_model")
 
-
 if __name__ == "__main__":
   main()

@@ -1,4 +1,3 @@
-'''
 from pathlib import Path
 import mlflow
 import mlflow.pytorch
@@ -21,9 +20,9 @@ if __name__ == "__main__":
     # order_by=["metrics.dev/loss ASC"]
   )
   print(runs)
+
+
 '''
-
-
 #  CHECK model logging/registering..
 
 import os
@@ -80,4 +79,4 @@ def main(cfg:BaseConfig):
       "platform": platform.platform(),
     })
 
-
+'''

@@ -3,23 +3,25 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 import torchvision.transforms.v2 as v2
+from src.utils.extra import PadToSquare
 from tqdm.auto import tqdm
 
-def compute_normalization_statistics(data_dir:Path):
+def compute_normalization_statistics(data_dir:Path, img_size:int, interpolation:v2.InterpolationMode):
   '''
   Calculate train data mean and std for normalization.
   '''
   g = torch.Generator().manual_seed(0)
   transforms = v2.Compose([
-    v2.Resize((64, 64)),
     v2.ToImage(),
+    # PadToSquare(padding_mode='edge'),
+    v2.Resize((img_size, img_size), interpolation=interpolation, antialias=True),
     v2.ToDtype(torch.float32, scale=True)
   ])
   train_dataset = ImageFolder(data_dir / "train", transform=transforms)
   train_loader = DataLoader(train_dataset, batch_size=256, shuffle=False, num_workers=12, generator=g)
 
-  channels_sum = 0
-  channels_squared_sum = 0
+  channels_sum = torch.zeros(3, dtype=torch.float64) # 0
+  channels_squared_sum = torch.zeros(3, dtype=torch.float64) # 0
   num_pixels = 0
 
   for images, _ in tqdm(train_loader):
@@ -35,8 +37,11 @@ def compute_normalization_statistics(data_dir:Path):
 
 # Usage: uv run python -m scripts.normalization_statistics
 if __name__ == "__main__":
+  # torch.set_printoptions(precision=4)
+  IMG_SIZE = 96
+  INTERPOLATION = v2.InterpolationMode.BICUBIC
   # data_dir = Path("data/processed/classification-expanded-boxes") # same as in config.yaml
   data_dir = Path("data/processed/classification")
-  mean, std = compute_normalization_statistics(data_dir)
+  mean, std = compute_normalization_statistics(data_dir, IMG_SIZE, INTERPOLATION)
   print(f"Mean: {mean} | std: {std}")
   # print(f"Mean: {mean.tolist()} | std: {std.tolist()}")
