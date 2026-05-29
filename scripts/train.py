@@ -31,7 +31,8 @@ cs.store(name="base_config", node=BaseConfig)
 # cs.store(group="scheduler", name="cosine", node=CosineSchedulerConfig)
 # cs.store(group="scheduler", name="linear", node=LinearSchedulerConfig)
 # cs.store(group="scheduler", name="step", node=StepSchedulerConfig)
-@hydra.main(version_base=None, config_path="../configs", config_name="bluberries.yaml")
+# @hydra.main(version_base=None, config_path="../configs", config_name="bluberries.yaml")
+@hydra.main(version_base=None, config_path="../configs")
 def main(cfg:BaseConfig):
   print(cfg)
 
@@ -53,6 +54,7 @@ def main(cfg:BaseConfig):
   # print(f"Scheduler: {scheduler.eta_min} , {scheduler.T_max}")
   trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
 
+  # '''
   experiment = set_or_create_experiment(cfg.experiment)
   with mlflow.start_run(run_name=cfg.experiment.run_name) as run:
     mlflow.set_tags({
@@ -151,6 +153,7 @@ def main(cfg:BaseConfig):
     # log model at lowest loss
     model.load_state_dict(best_state)
     mlflow.pytorch.log_model(model, name="best_model")
+  # '''
 
 if __name__ == "__main__":
   main()

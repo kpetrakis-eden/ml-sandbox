@@ -22,13 +22,21 @@ class DataFactory:
       "bicubic": v2.InterpolationMode.BICUBIC
     }
     # Construct a visualization dataloader with that many samples from each class, to draw prediction dynamics on.
+    # self.viz_samples_per_class = {
+    #   0: 10,
+    #   1: 10,
+    #   2: 10,
+    #   3: 60,
+    #   4: 50,
+    #   5: 60,
+    # }
+    # for merged pink/purple
     self.viz_samples_per_class = {
       0: 10,
       1: 10,
       2: 10,
-      3: 60,
-      4: 50,
-      5: 60,
+      3: 90,
+      4: 80,
     }
     train_transforms = [v2.ToImage()]
     dev_transforms = [v2.ToImage()]
@@ -171,7 +179,7 @@ class BalancedBatchSampler(BatchSampler):
     self.class_indices = { c: np.nonzero(self.targets == c)[0] for c in self.classes }
 
      # Minority class size
-    self.minority_size = min( len(v) for v in self.class_indices.values())
+    self.minority_size = min(len(v) for v in self.class_indices.values())
     self.n_batches = math.ceil(self.minority_size / self.samples_per_class)
 
   def __len__(self):
