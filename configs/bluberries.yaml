@@ -1,0 +1,63 @@
+defaults:
+  - base_config
+  - scheduler: null
+  - _self_
+
+experiment:
+  name: "BLUEBERRIES"
+  run_name: "convnexttiny-norm-balanced"
+  tracking_uri: "experiments/mlflow.db"
+  artifact_location: "experiments"
+
+seed: 123456789
+epochs: 30
+data:
+  root: "data/processed/classification"
+  num_workers: 12
+  batch_size : 240
+  sampling: "balanced"
+  preprocessing:
+    # padding_mode: null # "edge" # the mode for PadToSquare, null for no padding
+    # interpolation: "bicubic"
+    # img_size: 64
+  normalization:
+    mean: [0.4291, 0.5388, 0.3654]
+    std: [0.1859, 0.2121, 0.1966]
+  augmentation:
+    # - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+    #   p: 0.5
+    # - _target_: torchvision.transforms.v2.RandomVerticalFlip
+    #   p: 0.5
+    # - _target_: torchvision.transforms.v2.RandomRotation
+    #   degrees: 10
+    # - _target_: torchvision.transforms.v2.ColorJitter
+    #   brightness: 0.05
+    #   contrast: 0.05
+    #   saturation: 0.01
+
+model:
+  name: "convnext-tiny"
+  num_classes: 6
+  pretrained: true
+  default_resnet_downsize: true
+
+loss:
+  name: "cross-entropy"
+  focal_gamma: null
+  focal_reduction: null
+
+optimizer:
+  name: "adamw"
+  lr: 1e-4
+  weight_decay: 0
+  betas:
+  momentum:
+  nesterov:
+
+class_names:
+  - bud
+  - flower
+  - green
+  - pink
+  - purple
+  - blue

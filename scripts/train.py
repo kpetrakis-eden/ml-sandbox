@@ -31,7 +31,7 @@ cs.store(name="base_config", node=BaseConfig)
 # cs.store(group="scheduler", name="cosine", node=CosineSchedulerConfig)
 # cs.store(group="scheduler", name="linear", node=LinearSchedulerConfig)
 # cs.store(group="scheduler", name="step", node=StepSchedulerConfig)
-@hydra.main(version_base=None, config_path="../configs", config_name="config_hydra2.yaml")
+@hydra.main(version_base=None, config_path="../configs", config_name="bluberries.yaml")
 def main(cfg:BaseConfig):
   print(cfg)
 
