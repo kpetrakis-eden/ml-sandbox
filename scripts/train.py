@@ -36,7 +36,7 @@ cs.store(name="base_config", node=BaseConfig)
 def main(cfg:BaseConfig):
   print(cfg)
 
-  device = torch.device("cuda:0")
+  device = torch.device("cuda:1")
   seed_everything(cfg.seed)
   generator = torch.Generator().manual_seed(cfg.seed)
   data_factory = DataFactory(cfg.data, generator)
@@ -70,11 +70,13 @@ def main(cfg:BaseConfig):
       "cuda_version": torch.version.cuda,
       "platform": platform.platform(),
     })
+    best_f1_macro = 0
     best_dev_loss = float('inf')
     best_conf_matrix = None
     pbar = tqdm(range(1, cfg.epochs+1), desc="Main Loop", unit="epoch")
     for epoch in pbar:
-      # tqdm.write(f"using lr: {optimizer.param_groups[0]['lr']}") # to verify scheduler works as expected
+      if scheduler is not None:
+        tqdm.write(f"using lr: {optimizer.param_groups[0]['lr']}") # to verify scheduler works as expected
       loss, metrics = trainer.train_one_epoch()
       dev_loss, dev_metrics = trainer.validate_one_epoch()
       pbar.set_postfix({ "train_loss": f"{loss:.7f}", "dev_loss": f"{dev_loss:.7f}"})
@@ -112,15 +114,24 @@ def main(cfg:BaseConfig):
         pred_dynamics_fig = plot_pred_dynamics(wrong_images, wrong_targets, wrong_preds, wrong_indexes, cfg)
         mlflow.log_figure(pred_dynamics_fig, f"prediction_dynamics/{epoch:03d}.png")
 
-      if dev_loss < best_dev_loss:
-        best_dev_loss = dev_loss
+      if (dev_f1_macro:=dev_metrics['f1_macro']) > best_f1_macro:
+        best_f1_macro = dev_f1_macro
         best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-        # keep metrics at lowest loss
+        # keep metrics at highest f1
         best_conf_matrix = dev_metrics['confusion_matrix']
         report = dev_metrics['classification_report']
 
         wrong_images, wrong_targets, wrong_preds, wrong_indexes = trainer.prediction_dynamics()
         best_pred_dynamics_fig = plot_pred_dynamics(wrong_images, wrong_targets, wrong_preds, wrong_indexes, cfg)
+      # if dev_loss < best_dev_loss:
+      #   best_dev_loss = dev_loss
+      #   best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+      #   # keep metrics at lowest loss
+      #   best_conf_matrix = dev_metrics['confusion_matrix']
+      #   report = dev_metrics['classification_report']
+
+      #   wrong_images, wrong_targets, wrong_preds, wrong_indexes = trainer.prediction_dynamics()
+      #   best_pred_dynamics_fig = plot_pred_dynamics(wrong_images, wrong_targets, wrong_preds, wrong_indexes, cfg)
 
         tqdm.write(
           f"saved model at epoch {epoch} with: "
