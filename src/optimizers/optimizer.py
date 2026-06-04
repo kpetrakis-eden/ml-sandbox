@@ -11,9 +11,9 @@ def get_optimizer(cfg:OptimizerConfig, model:nn.Module):
 
   elif cfg.name == "sgd":
     if cfg.momentum and cfg.nesterov:
-      return SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum, nesterov=cfg.nesterov)
+      return SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum, nesterov=cfg.nesterov, weight_decay=cfg.weight_decay)
     else:
-      return SGD(model.parameters(), lr=cfg.lr)
+      return SGD(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
 
 
 def get_scheduler(cfg:SchedulerConfig, optimizer:torch.optim):
