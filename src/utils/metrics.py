@@ -104,7 +104,8 @@ def plot_pred_dynamics(images:torch.Tensor, targets:torch.Tensor, preds:torch.Te
   axes = axes.flatten()
   for ax, img, target, pred, index in zip(axes, images, targets, preds, indexes):
 
-    img = denorm(img)
+    # TODO: check the implications of this clamp!
+    img = denorm(img).clamp(0, 1) # clamped to avoid warning
     # img = (img - img.min()) / (img.max() - img.min()) # This artifically enhances the image
     img = img.permute(1,2,0).numpy()
     ax.imshow(img)
