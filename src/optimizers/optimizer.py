@@ -2,19 +2,17 @@ from src.utils.config import OptimizerConfig, SchedulerConfig
 import torch
 import torch.nn as nn
 from torch.optim import AdamW, SGD
-from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, StepLR
+from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR, LinearLR, StepLR, CosineAnnealingWarmRestarts, OneCycleLR
 
 
 def get_optimizer(cfg:OptimizerConfig, model:nn.Module):
   if cfg.name == "adamw":
     return AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
-
   elif cfg.name == "sgd":
     if cfg.momentum and cfg.nesterov:
       return SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum, nesterov=cfg.nesterov, weight_decay=cfg.weight_decay)
     else:
       return SGD(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
-
 
 def get_scheduler(cfg:SchedulerConfig, optimizer:torch.optim):
   # no scheduler specified in config
@@ -23,11 +21,19 @@ def get_scheduler(cfg:SchedulerConfig, optimizer:torch.optim):
   else:
     match cfg.name:
       case "cosine":
-        print("cosine matched")
+        print("Using CosineAnnealingLR scheduler")
         return CosineAnnealingLR(optimizer=optimizer, T_max=cfg.T_max) 
+      case "cosine-warmrestarts":
+        print("Using CosineAnnealingWarmRestarts scheduler")
+        return CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=cfg.T_0, T_mult=cfg.T_mult) 
       case "linear":
+        print("Using LinearLR scheduler")
         return LinearLR(opitmizer=optimizer, start_factor=cfg.start_factor, end_factor=cfg.end_factor, total_iterls=cfg.total_iters)
       case "step":
+        print("Using StepLR scheduler")
         return StepLR(optimizer=optimizer, step_size=cfg.step_size, gamma=cfg.gamma)
+      case "exponential":
+        print("Using ExponentialLR scheduler")
+        return ExponentialLR(optimizer=optimizer, gamma=cfg.gamma)
       case _:
         return None
