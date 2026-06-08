@@ -29,9 +29,9 @@ def objective(trial):
     momentum = 0
   lr = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
   weight_decay = trial.suggest_float("weight_decay", 1e-6, 5e-3, log=True)
-  # batch_size = trial.suggest_categorical("batch_size", [64, 128, 256, 512])
-  batch_size = trial.suggest_categorical("batch_size", [120, 250, 500]) # for balanced , multples of 5
-  run_name = "convnexttiny-balanced-bicubic-aug" + f"_trial-{trial.number}"
+  batch_size = trial.suggest_categorical("batch_size", [64, 128, 256, 512])
+  # batch_size = trial.suggest_categorical("batch_size", [120, 250, 500]) # for balanced , multples of 5
+  run_name = "convnexttiny-weighted-bicubic-aug" + f"_trial-{trial.number}"
 
   cs = ConfigStore.instance()
   cs.store(name="base_config", node=BaseConfig)
@@ -97,7 +97,8 @@ def objective(trial):
       best_f1_macro = max(best_f1_macro, dev_metrics['f1_macro'])
 
       # trial.report(dev_loss, epoch)
-      trial.report(dev_metrics['f1_macro'], epoch)
+      # trial.report(dev_metrics['f1_macro'], epoch)
+      trial.report(best_f1_macro, epoch)
       # Handle pruning based on the intermediate value.
       if trial.should_prune():
           raise optuna.TrialPruned()
@@ -112,10 +113,10 @@ if __name__ == "__main__":
   TODO: run trials searching for max f1 score, instead of min loss
   '''
   N_TRIALS = 100
-  TIMEOUT = 10800 # 54000 # sec
+  TIMEOUT = 216000 # 54000 # sec
   optuna_sampler = optuna.samplers.TPESampler(seed=0)
   # pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=5) # TODO: use HyperbandPruner is for DL
-  pruner = optuna.pruners.HyperbandPruner(min_resource=2, max_resource=10, reduction_factor=3)
+  pruner = optuna.pruners.HyperbandPruner(min_resource=2, max_resource=20, reduction_factor=3)
   # study = optuna.create_study(direction="minimize" ,sampler=optuna_sampler, pruner=pruner)
   study = optuna.create_study(direction="maximize" ,sampler=optuna_sampler, pruner=pruner)
   study.optimize(objective, n_trials=N_TRIALS, timeout=TIMEOUT)
