@@ -44,7 +44,7 @@ def main(cfg:BaseConfig):
   viz_loader = data_factory.build_viz_subset(cfg.seed).build_viz_loader()
   # _, targets = next(iter(train_loader))
   # print(targets[:10])
-  model = get_model(cfg.model)
+  model = get_model(cfg) # before: get_model(cfg.model)
   loss_fn = get_loss_fn(cfg.loss, train_loader, device)
   # print(loss_fn.weight)
   # optimizer = Adam

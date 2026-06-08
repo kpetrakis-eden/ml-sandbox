@@ -15,10 +15,23 @@ def build_resnet18(cfg: ModelConfig):
   model.fc = nn.Linear(model.fc.in_features, cfg.num_classes)
   return model
 
-def build_swin_tiny_patch4(cfg: ModelConfig):
-  model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True, num_classes=cfg.num_classes, img_size=64)
+def build_swin_tiny_patch4(cfg: BaseConfig):
+  '''
+  TODO: fix the hard-coded image size here (DONE?)
+  '''
+  model_cfg:ModelConfig = cfg.model
+  model = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True, num_classes=model_cfg.num_classes, img_size=cfg.data.preprocessing.img_size)
   return model
   
+def build_swin_v2_tiny_window8(cfg: BaseConfig):
+  model_cfg:ModelConfig = cfg.model
+  model = timm.create_model("swinv2_tiny_window8_256", pretrained=True, num_classes=model_cfg.num_classes, img_size=cfg.data.preprocessing.img_size)
+  return model
+
+def build_swin_s3_tiny(cfg: BaseConfig):
+  model_cfg:ModelConfig = cfg.model
+  model = timm.create_model("swin_s3_tiny_224", pretrained=True, num_classes=model_cfg.num_classes, img_size=cfg.data.preprocessing.img_size)
+  return model
 
 def build_efficientnet(cfg:ModelConfig):
   weights = EfficientNet_V2_S_Weights.IMAGENET1K_V1 if cfg.pretrained else None
@@ -39,20 +52,28 @@ def build_convnext_base(cfg:ModelConfig):
   return model
 
 
-def get_model(cfg:ModelConfig):
-  match cfg.name:
+def get_model(cfg: BaseConfig):
+  '''
+  NOTE: pass full config in Transformers from timm, to be able to get img_size
+  '''
+  model_cfg:ModelConfig = cfg.model
+  match model_cfg.name:
     case "resnet18":
-      return build_resnet18(cfg)
+      return build_resnet18(model_cfg)
     case "efficientnet":
-      return build_efficientnet(cfg)
+      return build_efficientnet(model_cfg)
     case "convnext-tiny":
-      return build_convnext_tiny(cfg)
+      return build_convnext_tiny(model_cfg)
     case "convnext-base":
-      return build_convnext_base(cfg)
+      return build_convnext_base(model_cfg)
     case "swin_tiny_patch4":
       return build_swin_tiny_patch4(cfg)
+    case "swinv2-tiny":
+      return build_swin_v2_tiny_window8(cfg)
+    case "swin-s3-tiny":
+      return build_swin_s3_tiny(cfg)
     case _:
-      raise ValueError(f"Not supported model: {cfg.name}")
+      raise ValueError(f"Not supported model: {model_cfg.name}")
     # TODO..
 
 '''
