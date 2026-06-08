@@ -67,6 +67,44 @@ batch_size: 512
   brightness: 0.1 # 0.05
 ```
 
+kai pira (eixa ksexasei to batch size se multiples tou 5 , kai ta names twn run exoun balanced.):
+Best value:82.55703855285125, at {'optim': 'adamw', 'lr': 5.701756809785623e-05, 'weight_decay': 7.526532382306442e-05, 'batch_size': 120}
+Best params:
+optim: adamw
+lr: 5.701756809785623e-05
+weight_decay: 7.526532382306442e-05
+batch_size: 120
+
+- Sto hpo.convnexttiny.aug.correct eixa ta akoloutha augmentations:
+```yaml
+augmentation:
+  - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+    p: 0.5
+  - _target_: torchvision.transforms.v2.RandomVerticalFlip
+    p: 0.5
+  - _target_: torchvision.transforms.v2.RandomRotation
+    degrees: 10
+  - _target_: torchvision.transforms.v2.ColorJitter
+    brightness: 0.1 # 0.5
+```
+
+and got:
+
+```bash
+Study statistics: 
+Number of finished trials:  64
+Number of pruned trials:  46
+Number of complete trials:  18
+Best trial: FrozenTrial(number=16, state=<TrialState.COMPLETE: 1>, values=[82.61365321817581], datetime_start=datetime.datetime 6, 10, 4, 46, 114038), datetime_complete=datetime.datetime(2026, 6, 6, 12, 6, 0, 383833), params={'optim': 'adamw', 'lr': 1.6707836e-05, 'weight_decay': 1.1343355851164134e-06, 'batch_size': 64}, user_attrs={}, system_attrs={'completed_rung_0': 79.59309, 'completed_rung_1': 81.71460809200119, 'completed_rung_2': 82.61365321817581}, intermediate_values={1: 76.01070566130139, 2: 05931582, 3: 80.19202193983276, 4: 81.18473689671923, 5: 81.20477721139368, 6: 81.71460809200119, 7: 81.71460809200119, 8: 81.70119, 9: 81.80221521780729, 10: 81.94573368273454, 11: 81.94573368273454, 12: 81.94573368273454, 13: 81.94573368273454, 14: 81.73454, 15: 81.94573368273454, 16: 82.12881979969492, 17: 82.14649032528251, 18: 82.61365321817581, 19: 82.61365321817581, 20: 81817581}, distributions={'optim': CategoricalDistribution(choices=('adamw', 'sgd')), 'lr': FloatDistribution(high=0.001, log=Tre-05, step=None), 'weight_decay': FloatDistribution(high=0.005, log=True, low=1e-06, step=None), 'batch_size': CategoricalDistrhoices=(64, 128, 256, 512))}, trial_id=16, value=None)
+Best value:82.61365321817581, at {'optim': 'adamw', 'lr': 1.6762279028107836e-05, 'weight_decay': 1.1343355851164134e-06, 'batc64}
+Best params:
+optim: adamw
+lr: 1.6762279028107836e-05
+weight_decay: 1.1343355851164134e-06
+batch_size: 64
+```
+
+
 ## YOLO Augmentations NOTES
 
 - Mosaic transform might hurt performance
