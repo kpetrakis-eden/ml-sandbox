@@ -106,7 +106,6 @@ batch_size: 64
 
 
 ## YOLO Augmentations NOTES
-
 - Mosaic transform might hurt performance
 - Mixup blends images -> try mixup 0.0
 - reduce scale (0.1 or 0.2) to avoid scaling down the image too much and loose tiny objects
