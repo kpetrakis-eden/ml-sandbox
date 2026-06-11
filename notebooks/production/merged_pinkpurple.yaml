@@ -1,0 +1,7 @@
+num_classes: 5
+class_names:
+  - bud
+  - flower
+  - green
+  - pink-purple
+  - blue
