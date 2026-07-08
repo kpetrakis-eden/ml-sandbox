@@ -31,7 +31,8 @@ def objective(trial):
   weight_decay = trial.suggest_float("weight_decay", 1e-6, 5e-3, log=True)
   batch_size = trial.suggest_categorical("batch_size", [64, 128, 256, 512])
   # batch_size = trial.suggest_categorical("batch_size", [120, 250, 500]) # for balanced , multples of 5
-  run_name = "convnexttiny-weighted-bicubic-aug" + f"_trial-{trial.number}"
+  run_name = "swintiny-weighted-bicubic-aug" + f"_trial-{trial.number}"
+  # run_name = "convnexttiny-weighted-bicubic-aug" + f"_trial-{trial.number}"
 
   cs = ConfigStore.instance()
   cs.store(name="base_config", node=BaseConfig)
@@ -56,7 +57,7 @@ def objective(trial):
   data_factory = DataFactory(cfg.data, generator)
   train_loader, dev_loader = data_factory.build_datasets().build_sampler().build_loaders()
   viz_loader = None # no prediction dynamics here
-  model = get_model(cfg.model)
+  model = get_model(cfg) # before: get_model(cfg.model)
   loss_fn = get_loss_fn(cfg.loss, train_loader, device)
   optimizer = get_optimizer(cfg.optimizer, model)
   scheduler = get_scheduler(cfg.scheduler, optimizer)
@@ -113,7 +114,7 @@ if __name__ == "__main__":
   TODO: run trials searching for max f1 score, instead of min loss
   '''
   N_TRIALS = 100
-  TIMEOUT = 216000 # 54000 # sec
+  TIMEOUT = 61200 # 216000 # 54000 # sec
   optuna_sampler = optuna.samplers.TPESampler(seed=0)
   # pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=5) # TODO: use HyperbandPruner is for DL
   pruner = optuna.pruners.HyperbandPruner(min_resource=2, max_resource=20, reduction_factor=3)

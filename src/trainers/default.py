@@ -79,6 +79,8 @@ class Trainer:
 
     all_preds = torch.cat(all_preds).numpy()
     all_targets = torch.cat(all_targets).numpy()
+    # print(np.unique(all_preds, return_counts=True))
+    # print(np.unique(all_targets, return_counts=True))
     metrics = compute_classification_metrics(all_preds, all_targets)
     # return dev_loss / len(self.dev_loader), correct / len(self.dev_loader.dataset)
     return dev_loss / len(self.dev_loader), metrics
