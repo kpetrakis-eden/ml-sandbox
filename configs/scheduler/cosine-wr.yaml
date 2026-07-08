@@ -1,4 +1,4 @@
 name: cosine-warmrestarts
-T_0: 5 
+T_0: 7 
 T_mult: 1 
 eta_min: 0

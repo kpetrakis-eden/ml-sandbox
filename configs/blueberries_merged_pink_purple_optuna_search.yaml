@@ -4,18 +4,18 @@ defaults:
   - _self_
 
 experiment:
-  name: hpo.convnexttiny.balanced.aug # "BLUEBERRIES-MERGED-PINK-PURPLE"
-  run_name: "convnexttiny-balanced-bicubic-aug"
+  name: hpo.swintiny.weighted.aug # "BLUEBERRIES-MERGED-PINK-PURPLE"
+  run_name: "swintiny-weighted-bicubic-aug"
   tracking_uri: "experiments/mlflow.db"
   artifact_location: "experiments"
 
 seed: 123456789
-epochs: 10
+epochs: 20
 data:
   root: "data/processed/classification-merged-pink-purple"
   num_workers: 12
-  batch_size : 250
-  sampling: "balanced"
+  batch_size : 256
+  sampling: "weighted"
   preprocessing:
     padding_mode: null # "edge" # the mode for PadToSquare, null for no padding
     interpolation: "bicubic"
@@ -42,7 +42,7 @@ data:
     #   sigma: 
 
 model:
-  name: "convnext-tiny"
+  name: "swin_tiny_patch4"
   num_classes: 5
   pretrained: true
   default_resnet_downsize: true
