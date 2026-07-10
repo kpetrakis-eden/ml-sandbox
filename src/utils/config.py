@@ -81,6 +81,7 @@ class StepSchedulerConfig(SchedulerConfig):
 @dataclass
 class BaseConfig:
   seed: int
+  device: str # e.g. "cuda:0"
   class_names : List[str]
   data: DataConfig
   experiment : MLFlowConfig
