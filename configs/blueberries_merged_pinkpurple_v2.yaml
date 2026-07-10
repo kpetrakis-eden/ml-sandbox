@@ -1,0 +1,70 @@
+defaults:
+  - base_config
+  - scheduler: null
+  - _self_
+
+device: "cuda:0"
+
+experiment:
+  name: blueberries.mergedpinkpurple.v2
+  run_name: "convnexttiny-test1"
+  tracking_uri: "experiments/mlflow.db"
+  artifact_location: "experiments"
+
+seed: 123456789
+epochs: 10
+data:
+  root: "data/processed/classification-merged-pink-purple-v2"
+  num_workers: 12
+  batch_size : 256
+  sampling: "weighted"
+  preprocessing:
+    padding_mode: null # "edge" # the mode for PadToSquare, null for no padding
+    interpolation: "bicubic"
+    img_size: 64
+  normalization:
+    mean: [0.4235, 0.5429, 0.3576]
+    std: [0.1761, 0.2002, 0.1795] # bicubic
+  augmentation:
+    - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+      p: 0.5
+    - _target_: torchvision.transforms.v2.RandomVerticalFlip
+      p: 0.5
+    - _target_: torchvision.transforms.v2.RandomRotation
+      degrees: 10
+    - _target_: torchvision.transforms.v2.ColorJitter
+      brightness: 0.1
+      # contrast: 0.05
+      # saturation: 0.01
+    # - _target_: torchvision.transforms.v2.RandomAdjustSharpness
+    #   p: 0.5
+    #   sharpness_factor: 2 
+    # - _target_: torchvision.transforms.v2.GaussianBlur
+    #   kernel_size: 3
+    #   sigma: [0.1, 1]
+
+model:
+  name: "convnext-tiny"
+  num_classes: 5
+  pretrained: true
+  default_resnet_downsize: true
+
+loss:
+  name: "cross-entropy"
+  focal_gamma: null
+  focal_reduction: null
+
+optimizer:
+  name: "adamw"
+  lr: 1e-4
+  weight_decay: 0
+  betas:
+  momentum:
+  nesterov:
+
+class_names:
+  - bud
+  - flower
+  - green
+  - pink-purple
+  - blue
