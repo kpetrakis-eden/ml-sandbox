@@ -17,51 +17,123 @@ from sklearn.metrics import (
   ConfusionMatrixDisplay
 )
 
-def compute_classification_metrics(preds, targets):
+def compute_classification_metrics(preds, targets, num_classes):
+  """
+  preds, targets : 1D arrays of int label ids
+  num_classes    : total number of classes in the problem (label set = range(num_classes))
+  """
+  label_ids = list(range(num_classes))            # global, stable label set
+  present_labels = sorted(set(targets))           # classes actually in THIS eval set
+  coverage = len(present_labels) / num_classes
+
   accuracy = accuracy_score(targets, preds)
   balanced_accuracy = balanced_accuracy_score(targets, preds)
 
-  f1_macro = f1_score(targets, preds, average='macro')
-  f1_weighted = f1_score(targets, preds, average='weighted')
+  # --- global (comparable across runs/datasets); absent classes count as 0 ---
+  f1_macro     = f1_score(targets, preds, labels=label_ids, average='macro',    zero_division=0)
+  f1_weighted  = f1_score(targets, preds, labels=label_ids, average='weighted', zero_division=0)
+  f1_per_class = f1_score(targets, preds, labels=label_ids, average=None,       zero_division=0)
 
-  precision_macro = precision_score(targets, preds, average='macro', zero_division='warn')
-  precision_weighted = precision_score(targets, preds, average='weighted', zero_division='warn')
+  # --- present-only (honest number for partial probe datasets) ---
+  f1_macro_present = f1_score(targets, preds, labels=present_labels, average='macro', zero_division=0)
 
-  recall_macro = recall_score(targets, preds, average='macro', zero_division='warn')
-  recall_weighted = recall_score(targets, preds, average='weighted', zero_division='warn')
+  precision_macro    = precision_score(targets, preds, labels=label_ids, average='macro',    zero_division=0)
+  precision_weighted = precision_score(targets, preds, labels=label_ids, average='weighted', zero_division=0)
+  recall_macro       = recall_score(targets, preds, labels=label_ids, average='macro',       zero_division=0)
+  recall_weighted    = recall_score(targets, preds, labels=label_ids, average='weighted',    zero_division=0)
 
-  # conf_matrix = confusion_matrix(targets, preds, normalize='true')
-  conf_matrix = confusion_matrix(targets, preds, normalize=None)
-  # disp = ConfusionMatrixDisplay(conf_matrix, display_labels=class_names, cmap=plt.cm.Blues)
-
-  per_class_report = classification_report(targets, preds, output_dict=True)
+  conf_matrix = confusion_matrix(targets, preds, labels=label_ids, normalize=None)   # <- labels= fixes shape
+  per_class_report = classification_report(targets, preds, labels=label_ids, output_dict=True, zero_division=0)
 
   return {
     "acc": accuracy * 100,
     "balanced_acc": balanced_accuracy * 100,
     "f1_macro": f1_macro * 100,
+    "f1_macro_present": f1_macro_present * 100,
+    "f1_per_class": {i: 100 * f for i, f in enumerate(f1_per_class)},  # per-class curves
     "f1_weighted": f1_weighted * 100,
     "precision_macro": precision_macro * 100,
     "precision_weighted": precision_weighted * 100,
     "recall_macro": recall_macro * 100,
     "recall_weighted": recall_weighted * 100,
     "confusion_matrix": conf_matrix,
-    "classification_report": per_class_report
+    "classification_report": per_class_report,
+    "coverage": coverage * 100,
   }
 
+"""
+def compute_classification_metrics(preds, targets):
+  '''
+  My previous initial implementation, with modifications of LABEL_IDS and present_labels used by finetuning.ipynb
+  '''
+  LABEL_IDS = [0, 1, 2, 3, 4] # for consistency in finetuning results
+  present_labels = sorted(set(targets))
+  coverage = len(set(targets)) / len(LABEL_IDS)
 
-def compute_classification_metrics_for_classifier_yolo_comparison(preds, targets, label_ids):
   accuracy = accuracy_score(targets, preds)
   balanced_accuracy = balanced_accuracy_score(targets, preds)
 
-  f1_macro = f1_score(targets, preds, average='macro')
-  f1_weighted = f1_score(targets, preds, average='weighted')
+  f1_macro = f1_score(targets, preds, labels=LABEL_IDS, average='macro')
+  # Given the classes that exist in this dataset, how well did the model learn them?
+  f1_macro_present = f1_score(targets, preds, labels=present_labels, average='macro', zero_division=0)
+  f1_macro_per_class = f1_score(targets, preds, labels=LABEL_IDS, average=None, zero_division=0)
+  f1_weighted = f1_score(targets, preds, labels=LABEL_IDS, average='weighted')
 
-  precision_macro = precision_score(targets, preds, average='macro', zero_division=0)
-  precision_weighted = precision_score(targets, preds, average='weighted', zero_division=0)
+  precision_macro = precision_score(targets, preds, labels=LABEL_IDS, average='macro', zero_division='warn')
+  precision_weighted = precision_score(targets, preds, labels=LABEL_IDS, average='weighted', zero_division='warn')
 
-  recall_macro = recall_score(targets, preds, average='macro', zero_division=0)
-  recall_weighted = recall_score(targets, preds, average='weighted', zero_division=0)
+  recall_macro = recall_score(targets, preds, labels=LABEL_IDS, average='macro', zero_division='warn')
+  recall_weighted = recall_score(targets, preds, labels=LABEL_IDS, average='weighted', zero_division='warn')
+
+  # conf_matrix = confusion_matrix(targets, preds, normalize='true')
+  conf_matrix = confusion_matrix(targets, preds, normalize=None)
+  # disp = ConfusionMatrixDisplay(conf_matrix, display_labels=class_names, cmap=plt.cm.Blues)
+
+  per_class_report = classification_report(targets, preds, labels=LABEL_IDS, output_dict=True)
+
+  return {
+    "acc": accuracy * 100,
+    "balanced_acc": balanced_accuracy * 100,
+    "f1_macro": f1_macro * 100,
+    "f1_macro_present": f1_macro_present*100,
+    # "f1_macro_per_class": [100*f1 for f1 in f1_macro_per_class],
+    "f1_weighted": f1_weighted * 100,
+    "precision_macro": precision_macro * 100,
+    "precision_weighted": precision_weighted * 100,
+    "recall_macro": recall_macro * 100,
+    "recall_weighted": recall_weighted * 100,
+    "confusion_matrix": conf_matrix,
+    "classification_report": per_class_report,
+    "coverage": coverage * 100
+  }
+"""
+
+def compute_classification_metrics_for_classifier_yolo_comparison(preds, targets, label_ids):
+  '''
+  TODO: zero_division might depend on problem setup
+  '''
+  present_labels = sorted(set(targets))
+  accuracy = accuracy_score(targets, preds)
+  balanced_accuracy = balanced_accuracy_score(targets, preds)
+
+  # before
+  # f1_macro = f1_score(targets, preds, average='macro')
+  # f1_weighted = f1_score(targets, preds, average='weighted')
+  f1_macro = f1_score(targets, preds, labels=label_ids, average='macro')
+  f1_macro_present = f1_score(targets, preds, labels=present_labels, average='macro', zero_division=0)
+  f1_weighted = f1_score(targets, preds, labels=label_ids, average='weighted')
+
+  # before
+  # precision_macro = precision_score(targets, preds, average='macro', zero_division=0)
+  # precision_weighted = precision_score(targets, preds, average='weighted', zero_division=0)
+  precision_macro = precision_score(targets, preds, labels=label_ids, average='macro', zero_division=0)
+  precision_weighted = precision_score(targets, preds, labels=label_ids, average='weighted', zero_division=0)
+
+  # before
+  # recall_macro = recall_score(targets, preds, average='macro', zero_division=0)
+  # recall_weighted = recall_score(targets, preds, average='weighted', zero_division=0)
+  recall_macro = recall_score(targets, preds, labels=label_ids, average='macro', zero_division=0)
+  recall_weighted = recall_score(targets, preds, labels=label_ids, average='weighted', zero_division=0)
 
   # conf_matrix = confusion_matrix(targets, preds, normalize='true')
   conf_matrix = confusion_matrix(targets, preds, normalize=None, labels=label_ids)
@@ -73,6 +145,7 @@ def compute_classification_metrics_for_classifier_yolo_comparison(preds, targets
     "acc": accuracy * 100,
     "balanced_acc": balanced_accuracy * 100,
     "f1_macro": f1_macro * 100,
+    "f1_macro_present": f1_macro_present*100,
     "f1_weighted": f1_weighted * 100,
     "precision_macro": precision_macro * 100,
     "precision_weighted": precision_weighted * 100,

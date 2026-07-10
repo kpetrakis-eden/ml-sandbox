@@ -7,7 +7,8 @@ from tqdm.auto import tqdm
 from src.utils.metrics import compute_classification_metrics
 
 class Trainer:
-  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, viz_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, scheduler:lr_scheduler, device:torch.device):
+  def __init__(self, model:nn.Module, train_loader:DataLoader, dev_loader:DataLoader, viz_loader:DataLoader, loss_fn:nn.Module, optimizer:optim, scheduler:lr_scheduler, device:torch.device, num_classes:int):
+    self.num_classes = num_classes
     self.model = model.to(device)
     self.train_loader = train_loader
     self.dev_loader = dev_loader
@@ -53,7 +54,7 @@ class Trainer:
 
     all_preds = torch.cat(all_preds).numpy()
     all_targets = torch.cat(all_targets).numpy()
-    metrics = compute_classification_metrics(all_preds, all_targets)
+    metrics = compute_classification_metrics(all_preds, all_targets, self.num_classes)
     # print(all_preds[:3], all_targets[:3])
     # return train_loss / len(self.train_loader) #, correct / len(self.train_loader.dataset)
     return train_loss / len(self.train_loader), metrics
@@ -81,7 +82,7 @@ class Trainer:
     all_targets = torch.cat(all_targets).numpy()
     # print(np.unique(all_preds, return_counts=True))
     # print(np.unique(all_targets, return_counts=True))
-    metrics = compute_classification_metrics(all_preds, all_targets)
+    metrics = compute_classification_metrics(all_preds, all_targets, self.num_classes)
     # return dev_loss / len(self.dev_loader), correct / len(self.dev_loader.dataset)
     return dev_loss / len(self.dev_loader), metrics
 
