@@ -61,7 +61,7 @@ def objective(trial):
   loss_fn = get_loss_fn(cfg.loss, train_loader, device)
   optimizer = get_optimizer(cfg.optimizer, model)
   scheduler = get_scheduler(cfg.scheduler, optimizer)
-  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
+  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device, num_classes=cfg.model.num_classes)
 
   experiment = set_or_create_experiment(cfg.experiment)
   with mlflow.start_run(run_name=cfg.experiment.run_name) as run:

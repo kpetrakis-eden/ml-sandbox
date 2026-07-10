@@ -35,8 +35,9 @@ cs.store(name="base_config", node=BaseConfig)
 @hydra.main(version_base=None, config_path="../configs")
 def main(cfg:BaseConfig):
   print(cfg)
-
-  device = torch.device("cuda:1")
+  assert len(cfg.class_names) == cfg.model.num_classes, "missmatch in num_classes and class_names"
+  device = torch.device(cfg.device)
+  # device = torch.device("cuda:1")
   seed_everything(cfg.seed)
   generator = torch.Generator().manual_seed(cfg.seed)
   data_factory = DataFactory(cfg.data, generator)
@@ -52,7 +53,7 @@ def main(cfg:BaseConfig):
   optimizer = get_optimizer(cfg.optimizer, model)
   scheduler = get_scheduler(cfg.scheduler, optimizer)
   # print(f"Scheduler: {scheduler.eta_min} , {scheduler.T_max}")
-  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device)
+  trainer = Trainer(model, train_loader, dev_loader, viz_loader, loss_fn, optimizer, scheduler, device, num_classes=cfg.model.num_classes)
 
   # '''
   experiment = set_or_create_experiment(cfg.experiment)
